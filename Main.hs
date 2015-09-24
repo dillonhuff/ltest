@@ -3,9 +3,12 @@ module Main(main) where
 import CPPCode
 import Syntax
 
+testDir = "/Users/dillon/Haskell/legion/ltest/dummy/"
+testFileName = "dummy.cc"
+
 main :: IO ()
 main =
-  putStrLn $ prettyCPP $ tasksToTestCase testTasks
+  writeFile (testDir ++ testFileName) (prettyCPP $ tasksToTestCase testTasks)
 
 testTasks =
   [task "task_A" $ [regionRequirement (logicalRegion (indexSpace 0 1) (fieldSpace ["X", "Y"])) RW EXCLUSIVE],

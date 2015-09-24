@@ -3,6 +3,7 @@ module Syntax(tasksToTestCase,
               regionRequirement, indexSpace, fieldSpace, logicalRegion,
               Privilege(..), Coherence(..)) where
 
+import Data.Char
 import Data.List as L
 
 import CPPCode
@@ -69,7 +70,7 @@ testBoilerplate =
   [include "legion.h",
    namespace "LegionRuntime::HighLevel"]
 
-taskIDs ts = enum "TaskIDs" $ "TOP_LEVEL_TASK_ID" : L.map (\t -> taskName t) ts
+taskIDs ts = enum "TaskIDs" $ "TOP_LEVEL_TASK_ID" : L.map (\t -> L.map toUpper $ taskName t) ts
 
 fieldIDs ts = enum "FieldIDs" ids
   where
@@ -100,7 +101,7 @@ taskRegistrationCode ts = L.map registerTaskCode uniqueTasks
     uniqueTasks = L.nub ts
 
 registerTaskCode t =
-  exprStmt $ functionCall "HighLevelRuntime::register_legion_task" [functionType $ taskName t] [cppVar $ taskName t, cppVar "Processor::LOC_PROC", cppVar "true", cppVar "false"]
+  exprStmt $ functionCall "HighLevelRuntime::register_legion_task" [functionType $ taskName t] [cppVar $ L.map toUpper $ taskName t, cppVar "Processor::LOC_PROC", cppVar "true", cppVar "false"]
 
 taskArgs =
   [(constq $ ptr $ objectType "Task", "task"),
