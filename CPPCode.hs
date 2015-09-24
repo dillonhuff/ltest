@@ -4,9 +4,10 @@ module CPPCode(CPPTopLevelItem,
                void, int, char, ptr, ref, objectType, constq,
                templateObjectType, functionType,
                CPPStmt,
-               objInitStmt, returnStmt, exprStmt, blockStmt,
+               objInitStmt, returnStmt, exprStmt, blockStmt, varDeclStmt,
                CPPExpr,
                cppVar, functionCall, ptrMethodCall, tempObject, refMethodCall,
+               arrayRef,
                prettyCPP) where
 
 import Data.List as L
@@ -92,8 +93,10 @@ data CPPStmt
   | ObjInitStmt CPPType String CPPExpr
   | ExprStmt CPPExpr
   | BlockStmt [CPPStmt]
+  | VarDeclStmt CPPType String [CPPExpr]
     deriving (Eq, Ord)
 
+varDeclStmt = VarDeclStmt
 blockStmt = BlockStmt
 objInitStmt = ObjInitStmt
 returnStmt = ReturnStmt
@@ -103,21 +106,25 @@ instance Show CPPStmt where
   show (ObjInitStmt t n e) = show t ++ " " ++ n ++ " = " ++ show e ++ ";"
   show (BlockStmt stmts) = "{\n" ++ (L.concat $ L.intersperse "\n" $ L.map show stmts) ++ "\n}"
   show (ReturnStmt expr) = "return " ++ show expr ++ ";"
+  show (VarDeclStmt t n args) = show t ++ " " ++ n ++ showArgList args ++ ";"
   show (ExprStmt expr) = show expr ++ ";"
 
 data CPPExpr
   = FunctionCall String [CPPType] [CPPExpr]
   | PtrMethodCall CPPExpr String [CPPType] [CPPExpr]
   | RefMethodCall CPPExpr String [CPPType] [CPPExpr]
+  | ArrayRef CPPExpr String CPPExpr
   | CPPVar String
   | TempObject String [CPPType] [CPPExpr]
     deriving (Eq, Ord)
 
 instance Show CPPExpr where
   show (CPPVar n) = n
+  show (TempObject n [] args) = n ++ showArgList args
   show (TempObject n tps args) = n ++ showTemplateParamList tps ++ showArgList args
   show (PtrMethodCall e n tps args) = show e ++ "->" ++ show (FunctionCall n tps args)
   show (RefMethodCall e n tps args) = show e ++ "." ++ show (FunctionCall n tps args)
+  show (ArrayRef e n r) = show e ++ "." ++ n ++ "[" ++ show r ++ "]"
   show (FunctionCall str [] args) =
     str ++ showArgList args
   show (FunctionCall str tps args) =
@@ -126,6 +133,7 @@ instance Show CPPExpr where
 showArgList args =
   "(" ++ (L.concat $ L.intersperse ", " $ L.map show args) ++ ")"
 
+arrayRef = ArrayRef
 tempObject = TempObject
 refMethodCall = RefMethodCall
 ptrMethodCall = PtrMethodCall

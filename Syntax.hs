@@ -56,7 +56,11 @@ fsName (FieldSpace n _) = n
 data Privilege
   = RW
   | RO
-    deriving (Eq, Ord, Show)
+    deriving (Eq, Ord)
+
+instance Show Privilege where
+  show RW = "READ_WRITE"
+  show RO = "READ_ONLY"
 
 data Coherence
   = ATOMIC
@@ -140,7 +144,36 @@ logicalRegionAllocCode lr =
   where
     lrExpr = ptrMethodCall runtime "create_logical_region" [] [ctx, cppVar $ indName $ lrIndexSpace lr, cppVar $ fsName $ lrFieldSpace lr]
 
-taskLaunches ts = []
+taskLaunches ts =
+  L.concatMap launchTaskCode ts
+
+launchTaskCode t =
+  [initTaskLauncher] ++ setRegionRequirements t ++ [launchTask]
+  where
+    initTaskLauncher = varDeclStmt (objectType "TaskLauncher") (taskName t ++ "_launcher") [cppVar $ L.map toUpper $ taskName t, tempObject "TaskArgument" [] [cppVar "NULL", cppVar "0"]]
+    launchTask = exprStmt $ ptrMethodCall runtime "execute_task" [] [ctx, cppVar $ (taskName t) ++ "_launcher"]
+
+setRegionRequirements t = L.concat $ L.zipWith (buildRRCode (taskName t ++ "_launcher")) [0..(length (taskRRS t) - 1)] (taskRRS t)
+
+buildRRCode launcherName n rr = (addRR launcherName rr):(addFields launcherName n rr)
+
+addFields launcherName n rr = L.map (addFieldCode (cppVar launcherName) n) fieldVars
+  where
+    reg = rrRegion rr
+    fieldVars = L.map cppVar $ fieldNames $ lrFieldSpace reg
+
+addFieldCode launcherNameVar n fVar =
+  exprStmt $ refMethodCall launcherRRN "add_field" [] [fVar]
+  where
+    launcherRRN = arrayRef launcherNameVar "region_requirements" (cppVar $ show n)
+
+addRR launcherName rr =
+  exprStmt $ refMethodCall (cppVar launcherName) "add_region_requirement" [] [rrObj]
+  where
+    rrObj = tempObject "RegionRequirement" [] [rName, privilege, coherence, rName]
+    rName = cppVar $ lrName $ rrRegion rr
+    privilege = cppVar $ show $ rrPrivilege rr
+    coherence = cppVar $ show $ rrCoherence rr
 
 cleanup ts =
   destroyRegions ts ++
