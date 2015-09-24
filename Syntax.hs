@@ -142,7 +142,35 @@ logicalRegionAllocCode lr =
 
 taskLaunches ts = []
 
-cleanup ts = []
+cleanup ts =
+  destroyRegions ts ++
+  destroyFieldSpaces ts ++
+  destroyIndexSpaces ts
+
+destroyRegions ts = L.map destroyRegionCode uniqueRegions
+  where
+    uniqueRegions = L.nubBy (\lr1 lr2 -> lrName lr1 == lrName lr2) logicalRegions
+    logicalRegions = L.map (\rr -> rrRegion rr) $ L.concatMap taskRRS ts
+
+destroyRegionCode r =
+  exprStmt $ ptrMethodCall runtime "destroy_logical_region" [] [ctx, cppVar $ lrName r]
+
+destroyFieldSpaces ts = L.map destroyFieldSpaceCode uniqueFieldSpaces
+  where
+    uniqueFieldSpaces = L.nubBy (\f1 f2 -> fsName f1 == fsName f2) fieldSpaces
+    fieldSpaces = L.map (\rr -> lrFieldSpace $ rrRegion rr) $ L.concatMap taskRRS ts
+
+destroyFieldSpaceCode f =
+  exprStmt $ ptrMethodCall runtime "destroy_field_space" [] [ctx, cppVar $ fsName f] 
+
+destroyIndexSpaces ts = L.map destroyIndexSpaceCode uniqueIndexSpaces
+  where
+    uniqueIndexSpaces = L.nubBy (\i1 i2 -> indName i1 == indName i2) indSpaces
+    regionReqs = L.concatMap taskRRS ts
+    indSpaces = L.map (\rr -> lrIndexSpace $ rrRegion rr) regionReqs
+    
+destroyIndexSpaceCode i =
+  exprStmt $ ptrMethodCall runtime "destroy_index_space" [] [ctx, cppVar $ indName i]
 
 allocator = cppVar "allocator"
 ctx = cppVar "ctx"
