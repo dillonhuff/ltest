@@ -4,9 +4,9 @@ module CPPCode(CPPTopLevelItem,
                void, int, char, ptr, ref, objectType, constq,
                templateObjectType, functionType,
                CPPStmt,
-               returnStmt, exprStmt,
+               objInitStmt, returnStmt, exprStmt, blockStmt,
                CPPExpr,
-               cppVar, functionCall,
+               cppVar, functionCall, ptrMethodCall, tempObject, refMethodCall,
                prettyCPP) where
 
 import Data.List as L
@@ -89,23 +89,35 @@ instance Show Qualifier where
 
 data CPPStmt
   = ReturnStmt CPPExpr
+  | ObjInitStmt CPPType String CPPExpr
   | ExprStmt CPPExpr
+  | BlockStmt [CPPStmt]
     deriving (Eq, Ord)
 
+blockStmt = BlockStmt
+objInitStmt = ObjInitStmt
 returnStmt = ReturnStmt
 exprStmt = ExprStmt
 
 instance Show CPPStmt where
+  show (ObjInitStmt t n e) = show t ++ " " ++ n ++ " = " ++ show e ++ ";"
+  show (BlockStmt stmts) = "{\n" ++ (L.concat $ L.intersperse "\n" $ L.map show stmts) ++ "\n}"
   show (ReturnStmt expr) = "return " ++ show expr ++ ";"
   show (ExprStmt expr) = show expr ++ ";"
 
 data CPPExpr
   = FunctionCall String [CPPType] [CPPExpr]
+  | PtrMethodCall CPPExpr String [CPPType] [CPPExpr]
+  | RefMethodCall CPPExpr String [CPPType] [CPPExpr]
   | CPPVar String
+  | TempObject String [CPPType] [CPPExpr]
     deriving (Eq, Ord)
 
 instance Show CPPExpr where
   show (CPPVar n) = n
+  show (TempObject n tps args) = n ++ showTemplateParamList tps ++ showArgList args
+  show (PtrMethodCall e n tps args) = show e ++ "->" ++ show (FunctionCall n tps args)
+  show (RefMethodCall e n tps args) = show e ++ "." ++ show (FunctionCall n tps args)
   show (FunctionCall str [] args) =
     str ++ showArgList args
   show (FunctionCall str tps args) =
@@ -114,9 +126,12 @@ instance Show CPPExpr where
 showArgList args =
   "(" ++ (L.concat $ L.intersperse ", " $ L.map show args) ++ ")"
 
+tempObject = TempObject
+refMethodCall = RefMethodCall
+ptrMethodCall = PtrMethodCall
 functionCall = FunctionCall
 cppVar = CPPVar
 
 prettyCPP :: [CPPTopLevelItem] -> String
-prettyCPP items = L.concat $ L.intersperse "\n" $ L.map show items
+prettyCPP items = L.concat $ L.intersperse "\n\n" $ L.map show items
 
