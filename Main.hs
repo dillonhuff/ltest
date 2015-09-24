@@ -2,6 +2,7 @@ module Main(main) where
 
 import CPPCode
 import Syntax
+import TestElaboration
 
 testDir = "/Users/dillon/Haskell/legion/ltest/dummy/"
 testFileName = "dummy.cc"
