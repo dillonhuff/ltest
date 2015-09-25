@@ -6,12 +6,13 @@ import Data.List as L
 import CPPCode
 import Syntax
 import SystemUtils
+import TaskEnum
 import TestElaboration
 
 main :: IO ()
 main = do
-  sequence_ $ L.map (\(testName, tasks) -> execTestCase testName tasks) tests
-  sequence_ $ L.map (\(testName, _) -> showTestResult testName) tests
+  sequence_ $ L.map (\(testName, tasks) -> execTestCase testName tasks) twoTaskTests
+  sequence_ $ L.map (\(testName, _) -> showTestResult testName) twoTaskTests
 
 legionSpyPath = "/Users/dillon/CppWorkspace/Legion/legion/tools/legion_spy.py"
 testPath = "/Users/dillon/Haskell/legion/ltest/cases/"
@@ -47,7 +48,11 @@ parseLegionSpyLog :: String -> String
 parseLegionSpyLog logStr =
   let logLines = lines logStr
       lineSuffixes = map (dropWhile isSpace) logLines in
-   head $ filter (isInfixOf "Mapping Dependence Errors:") lineSuffixes
+   case filter (isInfixOf "Mapping Dependence Errors:") lineSuffixes of
+    [l] -> l
+    _ -> "ERROR: Could not find mapping dependence line"
+
+twoTaskTests = L.zip (L.map (\i -> "test" ++ show i) [1..(length twoTasks)]) twoTasks
 
 tests = [("test1", testTasks1), ("test2", testTasks2)]
 
