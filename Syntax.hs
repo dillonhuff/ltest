@@ -2,7 +2,7 @@ module Syntax(Task,
               taskName, taskRRS,
               task,
               RegionRequirement,
-              rrRegion, rrPrivilege, rrCoherence,
+              rrRegion, rrPrivilege, rrCoherence, rrFields,
               regionRequirement,
               LogicalRegion,
               logicalRegion,
@@ -26,6 +26,7 @@ task = Task
 data RegionRequirement
   = RegionRequirement {
     rrRegion :: LogicalRegion,
+    rrFields :: [String],
     rrPrivilege :: Privilege,
     rrCoherence :: Coherence
     } deriving (Eq, Ord, Show)

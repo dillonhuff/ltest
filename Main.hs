@@ -13,10 +13,6 @@ main = do
   sequence_ $ L.map (\(testName, tasks) -> execTestCase testName tasks) tests
   sequence_ $ L.map (\(testName, _) -> showTestResult testName) tests
 
-  {-execTestCase "first" testTasks
-  depLines <- parseTestResult "first"
-  putStrLn $ depLines-}
-
 legionSpyPath = "/Users/dillon/CppWorkspace/Legion/legion/tools/legion_spy.py"
 testPath = "/Users/dillon/Haskell/legion/ltest/cases/"
 
@@ -56,9 +52,9 @@ parseLegionSpyLog logStr =
 tests = [("test1", testTasks1), ("test2", testTasks2)]
 
 testTasks1 =
-  [task "task_A" $ [regionRequirement (logicalRegion "lrA" (indexSpace "i1" 0 1) (fieldSpace "fsA" ["X", "Y"])) RW EXCLUSIVE],
-   task "task_B" $ [regionRequirement (logicalRegion "lrB" (indexSpace "i2" 0 123) (fieldSpace "fsB" ["K", "Z"])) RO EXCLUSIVE]]
+  [task "task_A" $ [regionRequirement (logicalRegion "lrA" (indexSpace "i1" 0 1) (fieldSpace "fsA" ["X", "Y"])) ["X"] RW EXCLUSIVE],
+   task "task_B" $ [regionRequirement (logicalRegion "lrB" (indexSpace "i2" 0 123) (fieldSpace "fsB" ["K", "Z"])) ["K", "Z"] RO EXCLUSIVE]]
 
 testTasks2 =
-  [task "task_A" $ [regionRequirement (logicalRegion "lrA" (indexSpace "i1" 0 1) (fieldSpace "fsA" ["X", "Y"])) RW EXCLUSIVE],
-   task "task_B" $ [regionRequirement (logicalRegion "lrA" (indexSpace "i1" 0 1) (fieldSpace "fsA" ["X", "Y"])) RW EXCLUSIVE]]
+  [task "task_A" $ [regionRequirement (logicalRegion "lrA" (indexSpace "i1" 0 1) (fieldSpace "fsA" ["X", "Y"])) ["X", "Y"] RW EXCLUSIVE],
+   task "task_B" $ [regionRequirement (logicalRegion "lrA" (indexSpace "i1" 0 1) (fieldSpace "fsA" ["X", "Y"])) ["X"] RW EXCLUSIVE]]

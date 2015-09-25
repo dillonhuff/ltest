@@ -97,8 +97,7 @@ buildRRCode launcherName n rr = (addRR launcherName rr):(addFields launcherName 
 
 addFields launcherName n rr = L.map (addFieldCode (cppVar launcherName) n) fieldVars
   where
-    reg = rrRegion rr
-    fieldVars = L.map cppVar $ fieldNames $ lrFieldSpace reg
+    fieldVars = L.map cppVar $ rrFields rr
 
 addFieldCode launcherNameVar n fVar =
   exprStmt $ refMethodCall launcherRRN "add_field" [] [fVar]
