@@ -10,6 +10,7 @@ toCPP :: TestCase -> [CPPTopLevelItem]
 toCPP ts =
   testBoilerplate ++
   [taskIDs $ testTasks ts, fieldIDs $ testFields ts] ++
+  (taskFunctions $ testTasks ts) ++
   [mainFunction $ testTasks ts]
 
 testBoilerplate =
@@ -42,17 +43,15 @@ taskArgs =
    (objectType "Context", "ctx"),
    (ptr $ objectType "HighLevelRuntime", "runtime")]
 
-  {-  testBoilerplate ++
-  [taskIDs ts, fieldIDs ts] ++
-  [topLevelTask ts] ++
-  taskFunctions ts ++
-  [mainFunction ts]
+taskFunctions ts = L.map taskFunction uniqueTasks
+  where
+    uniqueTasks = L.nub ts
+
+taskFunction t =
+  function void (taskName t) taskArgs $ L.concatMap impStmtToCPP $ taskBody t
 
 
-
-topLevelTask ts =
-  function void "top_level_task" taskArgs (topLevelBody ts)
-
+{-
 topLevelBody ts =
   indexSpaceCreation ts ++
   fieldSpaceCreation ts ++
@@ -166,16 +165,5 @@ destroyIndexSpaces ts = L.map destroyIndexSpaceCode uniqueIndexSpaces
     
 destroyIndexSpaceCode i =
   exprStmt $ ptrMethodCall runtime "destroy_index_space" [] [ctx, cppVar $ indName i]
-
-allocator = cppVar "allocator"
-ctx = cppVar "ctx"
-runtime = cppVar "runtime"
-
-taskFunctions ts = L.map taskFunction uniqueTasks
-  where
-    uniqueTasks = L.nub ts
-
-taskFunction t =
-  function void (taskName t) taskArgs []
 
 -}

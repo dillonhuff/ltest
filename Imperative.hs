@@ -4,8 +4,14 @@ module Imperative(TestCase,
                   Task,
                   task,
                   taskName, taskBody,
+                  ImperativeStmt,
+                  impStmtToCPP,
                   Coherence(..),
                   Privilege(..)) where
+
+import Data.List as L
+
+import CPPCode
 
 data TestCase
   = TestCase {
@@ -31,6 +37,13 @@ data ImperativeStmt
   | LogicalRegionInit String String String
   | TaskLaunch String [RegionRequirement]
     deriving (Eq, Ord, Show)
+
+impStmtToCPP (RuntimeCall name args) =
+  [exprStmt $ ptrMethodCall runtime name [] $ L.map cppVar args]
+
+allocator = cppVar "allocator"
+ctx = cppVar "ctx"
+runtime = cppVar "runtime"
 
 data RegionRequirement
   = RegionRequirement {
