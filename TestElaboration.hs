@@ -1,4 +1,4 @@
-module TestElaboration(tasksToTestCase) where
+module TestElaboration(toCPP) where
 
 import Data.Char
 import Data.List as L
@@ -6,11 +6,11 @@ import Data.List as L
 import CPPCode
 import Imperative
 
-tasksToTestCase :: [Task] -> [CPPTopLevelItem]
-tasksToTestCase ts =
+toCPP :: TestCase -> [CPPTopLevelItem]
+toCPP ts =
   testBoilerplate ++
-  [taskIDs ts, fieldIDs ts] ++
-  [mainFunction ts]
+  [taskIDs $ testTasks ts, fieldIDs $ testFields ts] ++
+  [mainFunction $ testTasks ts]
 
 testBoilerplate =
   [include "legion.h",
@@ -18,7 +18,7 @@ testBoilerplate =
 
 taskIDs ts = enum "TaskIDs" $ "TOP_LEVEL_TASK_ID" : L.map (\t -> L.map toUpper $ taskName t) ts
 
-fieldIDs ts = enum "FieldIDs" []
+fieldIDs fs = enum "FieldIDs" fs
 
 mainFunction ts =
   function int "main" [(int, "argc"), (ptr $ ptr $ char, "argv")] (mainBody ts)

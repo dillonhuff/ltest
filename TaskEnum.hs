@@ -4,7 +4,7 @@ import Data.List as L
 
 import Imperative
 
-basicTasks = [[topLevelTask, ta, tb]]
+basicTasks = [testCase "basicCase" ["FIELD_X"] [topLevelTask, ta, tb]]
 
 topLevelTask = task "top_level_task" []
 

@@ -1,8 +1,20 @@
-module Imperative(Task,
+module Imperative(TestCase,
+                  testCase,
+                  testName, testFields, testTasks,
+                  Task,
                   task,
                   taskName, taskBody,
                   Coherence(..),
                   Privilege(..)) where
+
+data TestCase
+  = TestCase {
+    testName :: String,
+    testFields :: [String],
+    testTasks :: [Task]
+    } deriving (Eq, Ord, Show)
+
+testCase = TestCase
 
 data Task
   = Task {
@@ -13,7 +25,7 @@ data Task
 task = Task
 
 data ImperativeStmt
-  = RuntimeCall [String]
+  = RuntimeCall String [String]
   | IndexSpaceInit String Int Int
   | FieldSpaceInit String [String]
   | LogicalRegionInit String String String

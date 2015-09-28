@@ -11,25 +11,26 @@ import TestElaboration
 
 main :: IO ()
 main = do
-  sequence_ $ L.map (\(testName, tasks) -> execTestCase testName tasks) twoTaskTests
-  sequence_ $ L.map (\(testName, _) -> showTestResult testName) twoTaskTests
+  sequence_ $ L.map execTestCase basicTasks
+  sequence_ $ L.map (\t -> showTestResult $ testName t) basicTasks
 
 legionSpyPath = "/Users/dillon/CppWorkspace/Legion/legion/tools/legion_spy.py"
 testPath = "/Users/dillon/Haskell/legion/ltest/cases/"
 
-execTestCase :: String -> [Task] -> IO ()
-execTestCase testName tasks = do
+execTestCase :: TestCase -> IO ()
+execTestCase testCase = do
   runCommandStrict $ "mkdir " ++ testDir
-  writeFile (testDir ++ "/" ++ testName ++ ".cc") (prettyCPP $ tasksToTestCase tasks)
-  writeFile (testDir ++ "/Makefile") (legionMakeFile testName)
+  writeFile (testDir ++ "/" ++ n ++ ".cc") (prettyCPP $ toCPP testCase)
+  writeFile (testDir ++ "/Makefile") (legionMakeFile n)
   runCommandStrict $ "make -C " ++ testDir
-  runCommandStrict $ testDir ++ "/" ++ testName ++ " " ++ spyFlags
+  runCommandStrict $ testDir ++ "/" ++ n ++ " " ++ spyFlags
   runCommandStrict $ legionSpyPath ++ " -l " ++ spyFile ++ " > " ++ testResFile
   where
-    testDir = testPath ++ testName
+    testDir = testPath ++ n
     spyFlags = "-level 2 -cat legion_spy -logfile " ++ spyFile
     spyFile = testDir ++ "/spy.log"
     testResFile = testDir ++ "/result.txt"
+    n = testName testCase
   
 legionMakeFile name =
   "ifndef LG_RT_DIR\n$(error LG_RT_DIR variable is not defined, aborting build)\nendif\nDEBUG=1\nOUTPUT_LEVEL=LEVEL_DEBUG\nSHARED_LOWLEVEL=1\nCC_FLAGS=-DLEGION_SPY\nOUTFILE\t:= " ++ name ++ "\nGEN_SRC\t:= " ++ name ++ ".cc" ++ "\ninclude $(LG_RT_DIR)/runtime.mk"
@@ -52,4 +53,3 @@ parseLegionSpyLog logStr =
     [l] -> l
     _ -> "ERROR: Could not find mapping dependence line"
 
-twoTaskTests = L.zip (L.map (\i -> "test" ++ show i) [1..(length basicTasks)]) basicTasks
