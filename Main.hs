@@ -4,7 +4,7 @@ import Data.Char
 import Data.List as L
 
 import CPPCode
-import Syntax
+import Imperative
 import SystemUtils
 import TaskEnum
 import TestElaboration
@@ -52,14 +52,4 @@ parseLegionSpyLog logStr =
     [l] -> l
     _ -> "ERROR: Could not find mapping dependence line"
 
-twoTaskTests = L.zip (L.map (\i -> "test" ++ show i) [1..(length twoTasks)]) twoTasks
-
-tests = [("test1", testTasks1), ("test2", testTasks2)]
-
-testTasks1 =
-  [task "task_A" $ [regionRequirement (logicalRegion "lrA" (indexSpace "i1" 0 1) (fieldSpace "fsA" ["X", "Y"])) ["X"] RW EXCLUSIVE],
-   task "task_B" $ [regionRequirement (logicalRegion "lrB" (indexSpace "i2" 0 123) (fieldSpace "fsB" ["K", "Z"])) ["K", "Z"] RO EXCLUSIVE]]
-
-testTasks2 =
-  [task "task_A" $ [regionRequirement (logicalRegion "lrA" (indexSpace "i1" 0 1) (fieldSpace "fsA" ["X", "Y"])) ["X", "Y"] RW EXCLUSIVE],
-   task "task_B" $ [regionRequirement (logicalRegion "lrA" (indexSpace "i1" 0 1) (fieldSpace "fsA" ["X", "Y"])) ["X"] RW EXCLUSIVE]]
+twoTaskTests = L.zip (L.map (\i -> "test" ++ show i) [1..(length basicTasks)]) basicTasks

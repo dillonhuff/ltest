@@ -37,7 +37,7 @@ showFunction (Function tp name formalParams body) =
   show tp ++ " " ++ name ++ showParamList formalParams ++ showBody body
 
 showBody stmts =
-  "{\n" ++ (L.concatMap (\stmt -> show stmt ++ "\n") stmts) ++ "\n}"
+  "{\n" ++ (L.concatMap (\stmt -> prettyShow 1 stmt ++ "\n") stmts) ++ "}"
 
 showParamList ps =
   "(" ++ (L.concat $ L.intersperse ", " $ L.map showParam ps) ++ ")"
@@ -108,6 +108,14 @@ instance Show CPPStmt where
   show (ReturnStmt expr) = "return " ++ show expr ++ ";"
   show (VarDeclStmt t n args) = show t ++ " " ++ n ++ showArgList args ++ ";"
   show (ExprStmt expr) = show expr ++ ";"
+
+prettyShow n (ObjInitStmt t name e) = indent n ++ show t ++ " " ++ name ++ " = " ++ show e ++ ";"
+prettyShow n (BlockStmt stmts) = indent n ++ "{\n" ++ (L.concat $ L.intersperse "\n" $ L.map (prettyShow (n+1)) stmts) ++ "\n" ++ indent n ++ "}"
+prettyShow n (ReturnStmt expr) = indent n ++ "return " ++ show expr ++ ";"
+prettyShow n (VarDeclStmt t name args) = indent n ++ show t ++ " " ++ name ++ showArgList args ++ ";"
+prettyShow n (ExprStmt expr) = indent n ++ show expr ++ ";"
+
+indent n = L.replicate n '\t'
 
 data CPPExpr
   = FunctionCall String [CPPType] [CPPExpr]

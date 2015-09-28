@@ -1,23 +1,14 @@
-module TaskEnum(twoTasks) where
+module TaskEnum(basicTasks) where
 
 import Data.List as L
 
-import Syntax
+import Imperative
 
-twoTasks =
-  L.map (\(t1, t2) -> [t1, t2]) $ cartProd (taskOptions "task_A") (taskOptions "task_B")
+basicTasks = [[topLevelTask, ta, tb]]
 
-taskOptions taskName =
-  (task taskName []):(L.map (\rr -> task taskName [rr]) $ allRRs dummyLR "FIELD_A")
+topLevelTask = task "top_level_task" []
 
-allRRs lr f =
-  L.map (\(p, c) -> regionRequirement dummyLR [f] p c) accessSettings
-
-dummyLR = logicalRegion "r1" (indexSpace "i1" 0 0) (fieldSpace "f1" ["FIELD_A"])
-
-accessSettings = cartProd privileges coherences
-
-privileges = [RW, RO]
-coherences = [ATOMIC, SIMULTANEOUS, EXCLUSIVE]
+ta = task "task_A" []
+tb = task "task_B" []
 
 cartProd xs ys = [(x, y) | x <- xs, y <- ys]
