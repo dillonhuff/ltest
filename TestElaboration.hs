@@ -7,12 +7,9 @@ import CPPCode
 import Imperative
 
 tasksToTestCase :: [Task] -> [CPPTopLevelItem]
-tasksToTestCase ts = error "tasksToTestCase"
-
-  {-  testBoilerplate ++
+tasksToTestCase ts =
+  testBoilerplate ++
   [taskIDs ts, fieldIDs ts] ++
-  [topLevelTask ts] ++
-  taskFunctions ts ++
   [mainFunction ts]
 
 testBoilerplate =
@@ -21,10 +18,37 @@ testBoilerplate =
 
 taskIDs ts = enum "TaskIDs" $ "TOP_LEVEL_TASK_ID" : L.map (\t -> L.map toUpper $ taskName t) ts
 
-fieldIDs ts = enum "FieldIDs" ids
+fieldIDs ts = enum "FieldIDs" []
+
+mainFunction ts =
+  function int "main" [(int, "argc"), (ptr $ ptr $ char, "argv")] (mainBody ts)
+
+mainBody ts =
+  [exprStmt $ functionCall "HighLevelRuntime::set_top_level_task_id" [] [cppVar "TOP_LEVEL_TASK_ID"],
+   exprStmt $ functionCall "HighLevelRuntime::register_legion_task" [functionType "top_level_task"] [cppVar "TOP_LEVEL_TASK_ID", cppVar "Processor::LOC_PROC", cppVar "true", cppVar "false"]] ++
+  taskRegistrationCode ts ++
+  [returnStmt $ functionCall "HighLevelRuntime::start" [] [cppVar "argc", cppVar "argv"]]
+
+taskRegistrationCode ts = L.map registerTaskCode uniqueTasks
   where
-    rrs = L.concatMap (\t -> taskRRS t) ts
-    ids = L.nub $ L.concatMap (\rr -> fieldNames $ lrFieldSpace $ rrRegion rr) rrs
+    uniqueTasks = L.nub ts
+
+registerTaskCode t =
+  exprStmt $ functionCall "HighLevelRuntime::register_legion_task" [functionType $ taskName t] [cppVar $ L.map toUpper $ taskName t, cppVar "Processor::LOC_PROC", cppVar "true", cppVar "false"]
+
+taskArgs =
+  [(constq $ ptr $ objectType "Task", "task"),
+   (constq $ ref $ templateObjectType "std::vector" [objectType "PhysicalRegion"], "regions"),
+   (objectType "Context", "ctx"),
+   (ptr $ objectType "HighLevelRuntime", "runtime")]
+
+  {-  testBoilerplate ++
+  [taskIDs ts, fieldIDs ts] ++
+  [topLevelTask ts] ++
+  taskFunctions ts ++
+  [mainFunction ts]
+
+
 
 topLevelTask ts =
   function void "top_level_task" taskArgs (topLevelBody ts)
@@ -154,25 +178,4 @@ taskFunctions ts = L.map taskFunction uniqueTasks
 taskFunction t =
   function void (taskName t) taskArgs []
 
-mainFunction ts =
-  function int "main" [(int, "argc"), (ptr $ ptr $ char, "argv")] (mainBody ts)
-
-mainBody ts =
-  [exprStmt $ functionCall "HighLevelRuntime::set_top_level_task_id" [] [cppVar "TOP_LEVEL_TASK_ID"],
-   exprStmt $ functionCall "HighLevelRuntime::register_legion_task" [functionType "top_level_task"] [cppVar "TOP_LEVEL_TASK_ID", cppVar "Processor::LOC_PROC", cppVar "true", cppVar "false"]] ++
-  taskRegistrationCode ts ++
-  [returnStmt $ functionCall "HighLevelRuntime::start" [] [cppVar "argc", cppVar "argv"]]
-
-taskRegistrationCode ts = L.map registerTaskCode uniqueTasks
-  where
-    uniqueTasks = L.nub ts
-
-registerTaskCode t =
-  exprStmt $ functionCall "HighLevelRuntime::register_legion_task" [functionType $ taskName t] [cppVar $ L.map toUpper $ taskName t, cppVar "Processor::LOC_PROC", cppVar "true", cppVar "false"]
-
-taskArgs =
-  [(constq $ ptr $ objectType "Task", "task"),
-   (constq $ ref $ templateObjectType "std::vector" [objectType "PhysicalRegion"], "regions"),
-   (objectType "Context", "ctx"),
-   (ptr $ objectType "HighLevelRuntime", "runtime")]
 -}

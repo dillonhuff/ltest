@@ -1,5 +1,6 @@
 module Imperative(Task,
                   task,
+                  taskName, taskBody,
                   Coherence(..),
                   Privilege(..)) where
 
