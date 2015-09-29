@@ -6,8 +6,8 @@ import Data.List as L
 import CPPCode
 import Imperative
 import SystemUtils
-import TaskEnum
 import TestElaboration
+import TreeCase
 
 main :: IO ()
 main = do
