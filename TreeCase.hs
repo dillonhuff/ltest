@@ -10,7 +10,7 @@ basicTasks =
   L.map compileTreeCase [basicCase]
   
 basicCase =
-  treeCase "case1" (logicalRegion "lr1" (indexSpace "i1" 0 4) (fieldSpace "fs1" ["X", "Y"])) [highLevelTask "a" [], highLevelTask "b" []]
+  treeCase "case1" (logicalRegion "lr1" (indexSpace "i1" 0 4) (fieldSpace "fs1" ["X", "Y"])) [highLevelTask "a" [regionRequirement "lr1" ["X"] RW ATOMIC "lr1"], highLevelTask "b" [regionRequirement "lr1" ["X", "Y"] RO SIMULTANEOUS "lr1"]]
 
 data TreeCase
   = TreeCase {
@@ -62,7 +62,28 @@ compileTasks t =
   (topLevelTask t):(taskStubs $ ttTasks t)
 
 topLevelTask t =
-  task "top_level_task" []
+  task "top_level_task" (topLevelTaskBody t)
+
+topLevelTaskBody t =
+  dataInit (ttRegion t) ++
+  taskLaunches (ttTasks t) ++
+  cleanup (ttRegion t)
+
+dataInit r =
+  [indexSpaceInit (indName is) (indStart is) (indEnd is),
+   fieldSpaceInit (fsName fs) (fsFields fs),
+   logicalRegionInit (lrName r) (indName is) (fsName fs)]
+  where
+    is = lrIndexSpace r
+    fs = lrFieldSpace r
+
+taskLaunches tsks =
+  L.map (\tsk -> taskLaunch (htName tsk) (htRRS tsk)) tsks
+
+cleanup r =
+  [runtimeCall "destroy_index_space" ["ctx", indName $ lrIndexSpace r],
+   runtimeCall "destroy_field_space" ["ctx", fsName $ lrFieldSpace r],
+   runtimeCall "destroy_logical_region" ["ctx", lrName r]]
 
 taskStubs ts =
   L.map taskCode ts

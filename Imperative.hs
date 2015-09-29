@@ -5,8 +5,10 @@ module Imperative(TestCase,
                   task,
                   taskName, taskBody,
                   ImperativeStmt,
+                  runtimeCall, indexSpaceInit, fieldSpaceInit, logicalRegionInit, taskLaunch,
                   impStmtToCPP) where
 
+import Data.Char
 import Data.List as L
 
 import Common
@@ -37,8 +39,72 @@ data ImperativeStmt
   | TaskLaunch String [RegionRequirement]
     deriving (Eq, Ord, Show)
 
+runtimeCall = RuntimeCall
+indexSpaceInit = IndexSpaceInit
+fieldSpaceInit = FieldSpaceInit
+logicalRegionInit = LogicalRegionInit
+taskLaunch = TaskLaunch
+
 impStmtToCPP (RuntimeCall name args) =
   [exprStmt $ ptrMethodCall runtime name [] $ L.map cppVar args]
+impStmtToCPP (IndexSpaceInit name start end) =
+  [objInitStmt (objectType "IndexSpace") name indExpr]
+  where
+    indExpr = ptrMethodCall runtime "create_index_space" [] [ctx, dom]
+    dom = functionCall "Domain::from_rect" [objectType "1"] [rect]
+    rect = tempObject "Rect" [objectType "1"] [startPoint, endPoint]
+    startPoint = tempObject "Point" [objectType "1"] [cppVar $ show start]
+    endPoint = tempObject "Point" [objectType "1"] [cppVar $ show end]
+impStmtToCPP (FieldSpaceInit name fieldNames) =
+  [declSpace, fieldAllocBlock]
+  where
+    declSpace = objInitStmt (objectType "FieldSpace") name fsExpr
+    fsExpr = ptrMethodCall runtime "create_field_space" [] [ctx]
+    fieldAllocBlock = blockStmt $ fieldAllocStmts name fieldNames
+impStmtToCPP (LogicalRegionInit name iName fName) =
+  [objInitStmt (objectType "LogicalRegion") name lrExpr]
+  where
+    lrExpr = ptrMethodCall runtime "create_logical_region" [] [ctx, cppVar iName, cppVar fName]
+impStmtToCPP (TaskLaunch name rrs) =
+  [initTaskLauncher] ++ setRegionRequirements name rrs ++ [launchTask]
+  where
+    initTaskLauncher = varDeclStmt (objectType "TaskLauncher") (name ++ "_launcher") [cppVar $ L.map toUpper name, tempObject "TaskArgument" [] [cppVar "NULL", cppVar "0"]]
+    launchTask = exprStmt $ ptrMethodCall runtime "execute_task" [] [ctx, cppVar $ name ++ "_launcher"]
+
+setRegionRequirements n rrs = L.concat $ L.zipWith (buildRRCode (n ++ "_launcher")) [0..(length rrs - 1)] rrs
+
+buildRRCode launcherName n rr = (addRR launcherName rr):(addFields launcherName n rr)
+
+addFields launcherName n rr = L.map (addFieldCode (cppVar launcherName) n) fieldVars
+  where
+    fieldVars = L.map cppVar $ rrFields rr
+
+addFieldCode launcherNameVar n fVar =
+  exprStmt $ refMethodCall launcherRRN "add_field" [] [fVar]
+  where
+    launcherRRN = arrayRef launcherNameVar "region_requirements" (cppVar $ show n)
+
+addRR launcherName rr =
+  exprStmt $ refMethodCall (cppVar launcherName) "add_region_requirement" [] [rrObj]
+  where
+    rrObj = tempObject "RegionRequirement" [] [rName, privilege, coherence, rParentName]
+    rName = cppVar $ rrRegion rr
+    rParentName = cppVar $ rrParentRegion rr
+    privilege = cppVar $ show $ rrPrivilege rr
+    coherence = cppVar $ show $ rrCoherence rr
+
+fieldAllocStmts name fieldNames =
+  fieldAllocatorInit:(fieldAllocs fieldNames)
+  where
+    fieldAllocatorInit = objInitStmt (objectType "FieldAllocator") "allocator" faExpr
+    faExpr = ptrMethodCall runtime "create_field_allocator" [] [ctx, cppVar name]
+
+fieldAllocs fieldNames =
+  L.map fieldAlloc fieldNames
+
+fieldAlloc fieldName =
+  exprStmt $ refMethodCall allocator "allocate_field" [] [functionCall "sizeof" [] [cppVar "int"], cppVar fieldName]
+    
 
 allocator = cppVar "allocator"
 ctx = cppVar "ctx"

@@ -1,14 +1,19 @@
 module Common(RegionRequirement,
+              regionRequirement,
+              rrRegion, rrFields, rrPrivilege, rrCoherence, rrParentRegion,
               Coherence(..),
               Privilege(..)) where
 
 data RegionRequirement
   = RegionRequirement {
     rrRegion :: String,
+    rrFields :: [String],
     rrPrivilege :: Privilege,
     rrCoherence :: Coherence,
     rrParentRegion :: String
     } deriving (Eq, Ord, Show)
+
+regionRequirement = RegionRequirement
 
 data Privilege
   = RW
