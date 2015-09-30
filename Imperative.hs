@@ -6,7 +6,7 @@ module Imperative(TestCase,
                   taskName, taskBody,
                   ImperativeStmt,
                   runtimeCall, indexSpaceInit, fieldSpaceInit, logicalRegionInit,
-                  taskLaunch, indexPartitionInit,
+                  taskLaunch, indexPartitionInit, indexSubspaceInit,
                   impStmtToCPP) where
 
 import Data.Char
@@ -36,6 +36,7 @@ task = Task
 data ImperativeStmt
   = RuntimeCall String [String]
   | IndexSpaceInit String Int Int
+  | IndexSubspaceInit String String Int
   | FieldSpaceInit String [String]
   | LogicalRegionInit String String String
   | TaskLaunch String [RegionRequirement]
@@ -44,6 +45,7 @@ data ImperativeStmt
 
 runtimeCall = RuntimeCall
 indexPartitionInit = IndexPartitionInit
+indexSubspaceInit = IndexSubspaceInit
 indexSpaceInit = IndexSpaceInit
 fieldSpaceInit = FieldSpaceInit
 logicalRegionInit = LogicalRegionInit
@@ -69,6 +71,10 @@ colorRangeInit n (c, (s, e)) =
     startPnt = tempObject "Point" [objectType "1"] [cppVar $ show s]
     endPnt = tempObject "Point" [objectType "1"] [cppVar $ show e]
 
+impStmtToCPP (IndexSubspaceInit name partName color) =
+  [objInitStmt (objectType "IndexSpace") name initExpr]
+  where
+    initExpr = ptrMethodCall runtime "get_index_subspace" [] [ctx, cppVar partName, cppVar $ show $ color]
 impStmtToCPP (IndexPartitionInit name indSpaceName disjointFlag colorMap) =
   colorBounds ++ colorRanges ++ [partitionStmt]
   where

@@ -106,10 +106,15 @@ dataInit r =
 
 indexTreeInit is =
   [indexSpaceInit (indName is) (indStart is) (indEnd is)] ++
-  (L.map (indexPartitionInitCode $ indName is) $ indParts is)
+  (L.concatMap (indexPartitionInitCode $ indName is) $ indParts is)
 
 indexPartitionInitCode indSpaceName p =
-  indexPartitionInit (ipName p) indSpaceName (ipIsDisjoint p) (M.map (\is -> (indSubStart is, indSubEnd is)) (ipChildren p))
+  (indexPartitionInit (ipName p) indSpaceName (ipIsDisjoint p) (M.map (\is -> (indSubStart is, indSubEnd is)) (ipChildren p))):
+  (L.concatMap (indexSubspaceInitCode (ipName p)) $ M.elems $ ipChildren p)
+
+indexSubspaceInitCode partName indSub =
+  (indexSubspaceInit (indSubName indSub) partName (indSubColor indSub)):
+  (L.concatMap (indexPartitionInitCode (indSubName indSub)) (indSubParts indSub))
 
 taskLaunches tsks =
   L.map (\tsk -> taskLaunch (htName tsk) (htRRS tsk)) tsks
