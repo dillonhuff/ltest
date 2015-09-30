@@ -10,7 +10,7 @@ import TreeCase
 basicTreeCases =
   [L.head $ L.map compileTreeCase basicCases]
   
-basicCases = L.zipWith (\n (a, b) -> treeCase ("case" ++ show n) dlr [a, b]) [1..(length taskPairs)] taskPairs
+basicCases = L.zipWith (\n (a, b) -> treeCase ("case" ++ show n) dlr dis [a, b]) [1..(length taskPairs)] taskPairs
 
 taskPairs = cartProd (tasks "a") (tasks "b")
 
@@ -18,7 +18,12 @@ tasks n = L.map (\rr -> highLevelTask n [rr]) rrs
 
 rrs = L.map (\(p, c) -> regionRequirement "lr1" ["X"] p c "lr1") taskAccesses
 
-dlr = logicalRegion "lr1" dis (fieldSpace "fs1" ["X"])
+dlr = logicalRegion "lr1" "i1" (fieldSpace "fs1" ["X"]) [lrDis]
+
+lrDis = regionPartition "lrDis" "indPart" 0 1 $ M.fromList [(0, lrP1), (1, lrP2)]
+
+lrP1 = logicalSubregion "lrP1" 0 []
+lrP2 = logicalSubregion "lrP2" 1 []
 
 dis = indexSpace "i1" 0 15 partitions
 
@@ -28,8 +33,8 @@ partitions =
 disPart =
   indexPartition "indPart" True 0 1 (M.fromList [(0, indP1), (1, indP2)])
 
-indP1 = indexSubspace "indS1" 0 0 7 [indP1Part]
-indP2 = indexSubspace "indS2" 1 8 15 []
+indP1 = indexSubspace "indP1" 0 0 7 [indP1Part]
+indP2 = indexSubspace "indP2" 1 8 15 []
 
 ovP1 = indexSubspace "ovS1" 0 0 11 []
 ovP2 = indexSubspace "ovS2" 1 5 14 []

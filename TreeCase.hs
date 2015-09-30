@@ -2,6 +2,9 @@ module TreeCase(treeCase,
                 highLevelTask,
                 LogicalRegion,
                 logicalRegion,
+                LogicalSubregion,
+                logicalSubregion,
+                regionPartition,
                 indexSpace,
                 IndexPartition,
                 indexPartition,
@@ -20,6 +23,7 @@ data TreeCase
   = TreeCase {
     ttName :: String,
     ttRegion :: LogicalRegion,
+    ttIndexSpace :: IndexSpace,
     ttTasks :: [HighLevelTask]
     } deriving (Eq, Ord, Show)
 
@@ -36,11 +40,32 @@ highLevelTask = HighLevelTask
 data LogicalRegion
   = LogicalRegion {
     lrName :: String,
-    lrIndexSpace :: IndexSpace,
-    lrFieldSpace :: FieldSpace
+    lrIndexSpace :: String,
+    lrFieldSpace :: FieldSpace,
+    lrParts :: [RegionPartition]
     } deriving (Eq, Ord, Show)
 
 logicalRegion = LogicalRegion
+
+data LogicalSubregion
+  = LogicalSubregion {
+    lsName :: String,
+    lsColor :: Int,
+    lsPartitions :: [RegionPartition]
+    } deriving (Eq, Ord, Show)
+
+logicalSubregion = LogicalSubregion
+
+data RegionPartition
+  = RegionPartition {
+    rpName :: String,
+    rpIndexPartition :: String,
+    rpColorStart :: Int,
+    rpColorEnd :: Int,
+    rpColorMap :: Map Int LogicalSubregion
+    } deriving (Eq, Ord, Show)
+
+regionPartition = RegionPartition
 
 data IndexSpace
   = IndexSpace {
@@ -92,17 +117,29 @@ topLevelTask t =
   task "top_level_task" (topLevelTaskBody t)
 
 topLevelTaskBody t =
-  dataInit (ttRegion t) ++
+  dataInit t ++
   taskLaunches (ttTasks t) ++
-  cleanup (ttRegion t)
+  cleanup t
 
-dataInit r =
+dataInit t =
   indexTreeInit is ++
-  [fieldSpaceInit (fsName fs) (fsFields fs),
-   logicalRegionInit (lrName r) (indName is) (fsName fs)]
+  [fieldSpaceInit (fsName fs) (fsFields fs)] ++
+  logicalRegionTreeInit r
   where
-    is = lrIndexSpace r
+    r = ttRegion t
+    is = ttIndexSpace t
     fs = lrFieldSpace r
+
+logicalRegionTreeInit r =
+  (logicalRegionInit(lrName r) (lrIndexSpace r) (fsName $ lrFieldSpace r)):
+  (L.concatMap (regionPartitionInitCode $ lrName r) $ lrParts r)
+
+regionPartitionInitCode parentName part =
+  (regionPartitionInit (rpName part) parentName (rpIndexPartition part)):
+  (L.concatMap (regionSubspaceInitCode (rpName part)) $ M.elems $ rpColorMap part)
+
+regionSubspaceInitCode partName subregion =
+  (regionSubspaceInit (lsName subregion) partName (lsColor subregion)):[]
 
 indexTreeInit is =
   [indexSpaceInit (indName is) (indStart is) (indEnd is)] ++
@@ -119,10 +156,10 @@ indexSubspaceInitCode partName indSub =
 taskLaunches tsks =
   L.map (\tsk -> taskLaunch (htName tsk) (htRRS tsk)) tsks
 
-cleanup r =
-  [runtimeCall "destroy_index_space" ["ctx", indName $ lrIndexSpace r],
-   runtimeCall "destroy_field_space" ["ctx", fsName $ lrFieldSpace r],
-   runtimeCall "destroy_logical_region" ["ctx", lrName r]]
+cleanup t =
+  [runtimeCall "destroy_index_space" ["ctx", indName $ ttIndexSpace $ t],
+   runtimeCall "destroy_field_space" ["ctx", fsName $ lrFieldSpace $ ttRegion t],
+   runtimeCall "destroy_logical_region" ["ctx", lrName $ ttRegion t]]
 
 taskStubs ts =
   L.map taskCode ts

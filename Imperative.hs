@@ -7,6 +7,8 @@ module Imperative(TestCase,
                   ImperativeStmt,
                   runtimeCall, indexSpaceInit, fieldSpaceInit, logicalRegionInit,
                   taskLaunch, indexPartitionInit, indexSubspaceInit,
+                  regionSubspaceInit,
+                  regionPartitionInit,
                   impStmtToCPP) where
 
 import Data.Char
@@ -37,6 +39,8 @@ data ImperativeStmt
   = RuntimeCall String [String]
   | IndexSpaceInit String Int Int
   | IndexSubspaceInit String String Int
+  | RegionPartitionInit String String String
+  | RegionSubspaceInit String String Int
   | FieldSpaceInit String [String]
   | LogicalRegionInit String String String
   | TaskLaunch String [RegionRequirement]
@@ -45,6 +49,8 @@ data ImperativeStmt
 
 runtimeCall = RuntimeCall
 indexPartitionInit = IndexPartitionInit
+regionPartitionInit = RegionPartitionInit
+regionSubspaceInit = RegionSubspaceInit
 indexSubspaceInit = IndexSubspaceInit
 indexSpaceInit = IndexSpaceInit
 fieldSpaceInit = FieldSpaceInit
@@ -71,6 +77,14 @@ colorRangeInit n (c, (s, e)) =
     startPnt = tempObject "Point" [objectType "1"] [cppVar $ show s]
     endPnt = tempObject "Point" [objectType "1"] [cppVar $ show e]
 
+impStmtToCPP (RegionSubspaceInit name partitionName color) =
+  [objInitStmt (objectType "LogicalRegion") name initExpr]
+  where
+    initExpr = ptrMethodCall runtime "get_logical_subregion_by_color" [] [ctx, cppVar partitionName, cppVar $ show color]  
+impStmtToCPP (RegionPartitionInit name parentName ipName) =
+  [objInitStmt (objectType "LogicalPartition") name initExpr]
+  where
+    initExpr = ptrMethodCall runtime "get_logical_partition" [] [ctx, cppVar parentName, cppVar ipName]
 impStmtToCPP (IndexSubspaceInit name partName color) =
   [objInitStmt (objectType "IndexSpace") name initExpr]
   where
