@@ -112,7 +112,7 @@ instance Show CPPStmt where
   show (VarDeclStmt t n args) = show t ++ " " ++ n ++ showArgList args ++ ";"
   show (ExprStmt expr) = show expr ++ ";"
 
-prettyShow n (AssignStmt l r) = indent n ++ show l ++ " = " ++ show r
+prettyShow n (AssignStmt l r) = indent n ++ show l ++ " = " ++ show r ++ ";"
 prettyShow n (ObjInitStmt t name EmptyExpr) = indent n ++ show t ++ " " ++ name ++ ";"
 prettyShow n (ObjInitStmt t name e) = indent n ++ show t ++ " " ++ name ++ " = " ++ show e ++ ";"
 prettyShow n (BlockStmt stmts) = indent n ++ "{\n" ++ (L.concat $ L.intersperse "\n" $ L.map (prettyShow (n+1)) stmts) ++ "\n" ++ indent n ++ "}"
@@ -138,6 +138,7 @@ instance Show CPPExpr where
   show (TempObject n tps args) = n ++ showTemplateParamList tps ++ showArgList args
   show (PtrMethodCall e n tps args) = show e ++ "->" ++ show (FunctionCall n tps args)
   show (RefMethodCall e n tps args) = show e ++ "." ++ show (FunctionCall n tps args)
+  show (ArrayRef EmptyExpr n r) = n ++ "[" ++ show r ++ "]"
   show (ArrayRef e n r) = show e ++ "." ++ n ++ "[" ++ show r ++ "]"
   show (FunctionCall str [] args) =
     str ++ showArgList args

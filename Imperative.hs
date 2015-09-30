@@ -62,7 +62,12 @@ colorBoundsCode n colorMap =
     end = L.maximum $ M.keys colorMap
 
 colorRangeInit n (c, (s, e)) =
-  assignStmt (arrayRef (cppVar "") n (cppVar $ show c)) (cppVar "A")
+  assignStmt (arrayRef emptyExpr n (cppVar $ show c)) rangeExpr
+  where
+    rangeExpr = functionCall "Domain::from_rect" [objectType "1"] [rangeRect]
+    rangeRect = tempObject "Rect" [objectType "1"] [startPnt, endPnt]
+    startPnt = tempObject "Point" [objectType "1"] [cppVar $ show s]
+    endPnt = tempObject "Point" [objectType "1"] [cppVar $ show e]
 
 impStmtToCPP (IndexPartitionInit name indSpaceName disjointFlag colorMap) =
   colorBounds ++ colorRanges ++ [partitionStmt]
