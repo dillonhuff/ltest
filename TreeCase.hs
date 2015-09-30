@@ -3,10 +3,15 @@ module TreeCase(treeCase,
                 LogicalRegion,
                 logicalRegion,
                 indexSpace,
+                IndexPartition,
+                indexPartition,
+                IndexSubspace,
+                indexSubspace,
                 fieldSpace,
                 compileTreeCase) where
 
 import Data.List as L
+import Data.Map as M
 
 import Common
 import Imperative
@@ -41,10 +46,33 @@ data IndexSpace
   = IndexSpace {
     indName :: String,
     indStart :: Int,
-    indEnd :: Int
+    indEnd :: Int,
+    indParts :: [IndexPartition]
     } deriving (Eq, Ord, Show)
 
 indexSpace = IndexSpace
+
+data IndexPartition
+  = IndexPartition {
+    ipName :: String,
+    ipIsDisjoint :: Bool,
+    ipColorStart :: Int,
+    ipColorEnd :: Int,
+    ipChildren :: Map Int IndexSubspace
+    } deriving (Eq, Ord, Show)
+
+indexPartition = IndexPartition
+
+data IndexSubspace
+  = IndexSubspace {
+    indSubName :: String,
+    indSubColor :: Int,
+    indSubStart :: Int,
+    indSubEnd :: Int,
+    indSubParts :: [IndexPartition]
+    } deriving (Eq, Ord, Show)
+
+indexSubspace = IndexSubspace
 
 data FieldSpace
   = FieldSpace {
@@ -69,12 +97,19 @@ topLevelTaskBody t =
   cleanup (ttRegion t)
 
 dataInit r =
-  [indexSpaceInit (indName is) (indStart is) (indEnd is),
-   fieldSpaceInit (fsName fs) (fsFields fs),
+  indexTreeInit is ++
+  [fieldSpaceInit (fsName fs) (fsFields fs),
    logicalRegionInit (lrName r) (indName is) (fsName fs)]
   where
     is = lrIndexSpace r
     fs = lrFieldSpace r
+
+indexTreeInit is =
+  [indexSpaceInit (indName is) (indStart is) (indEnd is)] ++
+  (L.map (indexPartitionInitCode $ indName is) $ indParts is)
+
+indexPartitionInitCode indSpaceName p =
+  indexPartitionInit (ipName p) indSpaceName (ipIsDisjoint p) (M.map (\is -> (indSubStart is, indSubEnd is)) (ipChildren p))
 
 taskLaunches tsks =
   L.map (\tsk -> taskLaunch (htName tsk) (htRRS tsk)) tsks

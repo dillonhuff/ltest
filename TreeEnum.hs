@@ -1,16 +1,15 @@
 module TreeEnum(basicTreeCases) where
 
 import Data.List as L
+import Data.Map as M
 
 import Common
 import TreeCase
 
+-- For now shortened to make testing easier
 basicTreeCases =
-  L.map compileTreeCase basicCases
+  [L.head $ L.map compileTreeCase basicCases]
   
-basicCase =
-  treeCase "case1" (logicalRegion "lr1" (indexSpace "i1" 0 4) (fieldSpace "fs1" ["X", "Y"])) [highLevelTask "a" [regionRequirement "lr1" ["X"] RW ATOMIC "lr1"], highLevelTask "b" [regionRequirement "lr1" ["X", "Y"] RO SIMULTANEOUS "lr1"]]
-
 basicCases = L.zipWith (\n (a, b) -> treeCase ("case" ++ show n) dlr [a, b]) [1..(length taskPairs)] taskPairs
 
 taskPairs = cartProd (tasks "a") (tasks "b")
@@ -19,7 +18,25 @@ tasks n = L.map (\rr -> highLevelTask n [rr]) rrs
 
 rrs = L.map (\(p, c) -> regionRequirement "lr1" ["X"] p c "lr1") taskAccesses
 
-dlr = logicalRegion "lr1" (indexSpace "i1" 0 0) (fieldSpace "fs1" ["X"])
+dlr = logicalRegion "lr1" dis (fieldSpace "fs1" ["X"])
+
+dis = indexSpace "i1" 0 15 partitions
+
+partitions =
+  [disPart, overlapPart]
+
+disPart =
+  indexPartition "indPart" True 0 1 (M.fromList [(0, indP1), (1, indP2)])
+
+indP1 = indexSubspace "indS1" 0 0 7 []
+indP2 = indexSubspace "indS2" 1 8 15 []
+
+ovP1 = indexSubspace "ovS1" 0 0 11 []
+ovP2 = indexSubspace "ovS1" 1 5 14 []
+ovP3 = indexSubspace "ovS1" 2 1 2 []
+
+overlapPart =
+  indexPartition "overlapPart" True 0 2 (M.fromList [(0, ovP1), (1, ovP2), (2, ovP3)])
 
 taskAccesses = cartProd [RO, RW] [SIMULTANEOUS, ATOMIC, EXCLUSIVE]
 

@@ -5,11 +5,13 @@ module Imperative(TestCase,
                   task,
                   taskName, taskBody,
                   ImperativeStmt,
-                  runtimeCall, indexSpaceInit, fieldSpaceInit, logicalRegionInit, taskLaunch,
+                  runtimeCall, indexSpaceInit, fieldSpaceInit, logicalRegionInit,
+                  taskLaunch, indexPartitionInit,
                   impStmtToCPP) where
 
 import Data.Char
 import Data.List as L
+import Data.Map as M
 
 import Common
 import CPPCode
@@ -37,14 +39,38 @@ data ImperativeStmt
   | FieldSpaceInit String [String]
   | LogicalRegionInit String String String
   | TaskLaunch String [RegionRequirement]
+  | IndexPartitionInit String String Bool (Map Int (Int, Int))
     deriving (Eq, Ord, Show)
 
 runtimeCall = RuntimeCall
+indexPartitionInit = IndexPartitionInit
 indexSpaceInit = IndexSpaceInit
 fieldSpaceInit = FieldSpaceInit
 logicalRegionInit = LogicalRegionInit
 taskLaunch = TaskLaunch
 
+
+colorBoundsCode n colorMap =
+  [colorBoundsDomain]
+  where
+    colorBoundsDomain = objInitStmt (objectType "Domain") n domExpr
+    domExpr = functionCall "Domain::from_rect" [objectType "1"] [boundRect]
+    boundRect = tempObject "Rect" [objectType "1"] [startPnt, endPnt]
+    startPnt = tempObject "Point" [objectType "1"] [cppVar $ show start]
+    endPnt = tempObject "Point" [objectType "1"] [cppVar $ show end]
+    start = L.minimum $ M.keys colorMap
+    end = L.maximum $ M.keys colorMap
+
+impStmtToCPP (IndexPartitionInit name indSpaceName disjointFlag colorMap) =
+  colorBounds ++ colorRanges ++ [partitionStmt]
+  where
+    colorBounds = colorBoundsCode (name ++ "_color_domain") colorMap
+    colorRanges = [objInitStmt (objectType "DomainColoring") (name ++ "_coloring") emptyExpr]
+    disjointVal = cppVar $ if disjointFlag then "true" else "false"
+    coloringVar = cppVar $ name ++ "_coloring"
+    colorBoundsVar = cppVar $ name ++ "_color_domain"
+    partitionStmt = objInitStmt (objectType "IndexPartition") name partExpr
+    partExpr = ptrMethodCall runtime "create_index_partition" [] [ctx, cppVar indSpaceName, colorBoundsVar, coloringVar, disjointVal]
 impStmtToCPP (RuntimeCall name args) =
   [exprStmt $ ptrMethodCall runtime name [] $ L.map cppVar args]
 impStmtToCPP (IndexSpaceInit name start end) =
