@@ -4,7 +4,7 @@ module CPPCode(CPPTopLevelItem,
                void, int, char, ptr, ref, objectType, constq,
                templateObjectType, functionType,
                CPPStmt,
-               objInitStmt, returnStmt, exprStmt, blockStmt, varDeclStmt,
+               assignStmt, objInitStmt, returnStmt, exprStmt, blockStmt, varDeclStmt,
                CPPExpr,
                cppVar, functionCall, ptrMethodCall, tempObject, refMethodCall,
                arrayRef, emptyExpr,
@@ -94,6 +94,7 @@ data CPPStmt
   | ExprStmt CPPExpr
   | BlockStmt [CPPStmt]
   | VarDeclStmt CPPType String [CPPExpr]
+  | AssignStmt CPPExpr CPPExpr
     deriving (Eq, Ord)
 
 varDeclStmt = VarDeclStmt
@@ -101,6 +102,7 @@ blockStmt = BlockStmt
 objInitStmt = ObjInitStmt
 returnStmt = ReturnStmt
 exprStmt = ExprStmt
+assignStmt = AssignStmt
 
 instance Show CPPStmt where
   show (ObjInitStmt t n EmptyExpr) = show t ++ " " ++ show n ++ ";"
@@ -109,6 +111,8 @@ instance Show CPPStmt where
   show (ReturnStmt expr) = "return " ++ show expr ++ ";"
   show (VarDeclStmt t n args) = show t ++ " " ++ n ++ showArgList args ++ ";"
   show (ExprStmt expr) = show expr ++ ";"
+
+prettyShow n (AssignStmt l r) = indent n ++ show l ++ " = " ++ show r
 prettyShow n (ObjInitStmt t name EmptyExpr) = indent n ++ show t ++ " " ++ name ++ ";"
 prettyShow n (ObjInitStmt t name e) = indent n ++ show t ++ " " ++ name ++ " = " ++ show e ++ ";"
 prettyShow n (BlockStmt stmts) = indent n ++ "{\n" ++ (L.concat $ L.intersperse "\n" $ L.map (prettyShow (n+1)) stmts) ++ "\n" ++ indent n ++ "}"

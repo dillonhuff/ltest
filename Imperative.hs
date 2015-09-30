@@ -61,11 +61,14 @@ colorBoundsCode n colorMap =
     start = L.minimum $ M.keys colorMap
     end = L.maximum $ M.keys colorMap
 
+colorRangeInit n (c, (s, e)) =
+  assignStmt (arrayRef (cppVar "") n (cppVar $ show c)) (cppVar "A")
+
 impStmtToCPP (IndexPartitionInit name indSpaceName disjointFlag colorMap) =
   colorBounds ++ colorRanges ++ [partitionStmt]
   where
     colorBounds = colorBoundsCode (name ++ "_color_domain") colorMap
-    colorRanges = [objInitStmt (objectType "DomainColoring") (name ++ "_coloring") emptyExpr]
+    colorRanges = (objInitStmt (objectType "DomainColoring") (name ++ "_coloring") emptyExpr):(L.map (colorRangeInit (name ++ "_coloring")) $ M.toList colorMap)
     disjointVal = cppVar $ if disjointFlag then "true" else "false"
     coloringVar = cppVar $ name ++ "_coloring"
     colorBoundsVar = cppVar $ name ++ "_color_domain"
