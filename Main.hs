@@ -8,11 +8,12 @@ import Imperative
 import SystemUtils
 import TestElaboration
 import TreeCase
+import TreeEnum
 
 main :: IO ()
 main = do
-  sequence_ $ L.map execTestCase basicTasks
-  sequence_ $ L.map (\t -> showTestResult $ testName t) basicTasks
+  sequence_ $ L.map execTestCase basicTreeCases
+  sequence_ $ L.map (\t -> showTestResult $ testName t) basicTreeCases
 
 legionSpyPath = "/Users/dillon/CppWorkspace/Legion/legion/tools/legion_spy.py"
 testPath = "/Users/dillon/Haskell/legion/ltest/cases/"

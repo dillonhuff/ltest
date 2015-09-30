@@ -1,16 +1,15 @@
-module TreeCase(basicTasks,
+module TreeCase(treeCase,
+                highLevelTask,
+                LogicalRegion,
+                logicalRegion,
+                indexSpace,
+                fieldSpace,
                 compileTreeCase) where
 
 import Data.List as L
 
 import Common
 import Imperative
-
-basicTasks =
-  L.map compileTreeCase [basicCase]
-  
-basicCase =
-  treeCase "case1" (logicalRegion "lr1" (indexSpace "i1" 0 4) (fieldSpace "fs1" ["X", "Y"])) [highLevelTask "a" [regionRequirement "lr1" ["X"] RW ATOMIC "lr1"], highLevelTask "b" [regionRequirement "lr1" ["X", "Y"] RO SIMULTANEOUS "lr1"]]
 
 data TreeCase
   = TreeCase {
