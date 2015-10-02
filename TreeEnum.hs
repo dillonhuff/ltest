@@ -6,9 +6,8 @@ import Data.Map as M
 import Common
 import TreeCase
 
--- For now shortened to make testing easier
 basicTreeCases =
-  [L.head $ L.map compileTreeCase basicCases]
+  L.map (\c -> compileTreeCase $ pruneTreeCase c) basicCases
   
 basicCases = L.zipWith (\n (a, b) -> treeCase ("case" ++ show n) dlr dis [a, b]) [1..(length taskPairs)] taskPairs
 

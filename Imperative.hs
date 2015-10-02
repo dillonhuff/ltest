@@ -80,7 +80,7 @@ colorRangeInit n (c, (s, e)) =
 impStmtToCPP (RegionSubspaceInit name partitionName color) =
   [objInitStmt (objectType "LogicalRegion") name initExpr]
   where
-    initExpr = ptrMethodCall runtime "get_logical_subregion_by_color" [] [ctx, cppVar partitionName, cppVar $ show color]  
+    initExpr = ptrMethodCall runtime "get_logical_subregion_by_color" [] [ctx, cppVar partitionName, cppVar $ show color]
 impStmtToCPP (RegionPartitionInit name parentName ipName) =
   [objInitStmt (objectType "LogicalPartition") name initExpr]
   where
