@@ -15,9 +15,11 @@ module TreeCase(treeCase,
                 rpName, rpColorMap, rpIndexPartition,
                 IndexPartition,
                 indexPartition,
+                ipName, ipIsDisjoint,
                 IndexSubspace,
                 indexSubspace,
                 fieldSpace,
+                IndexSpace,
                 compileTreeCase) where
 
 import Data.List as L
@@ -119,7 +121,6 @@ data FieldSpace
     } deriving (Eq, Ord, Show)
 
 fieldSpace = FieldSpace
-
 
 compileTreeCase t =
   testCase (ttName t) (fsFields $ lrFieldSpace $ ttRegion t) (compileTasks t)

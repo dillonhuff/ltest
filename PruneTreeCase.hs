@@ -8,20 +8,26 @@ import Common
 import TreeCase
 
 pruneTreeCase c =
-  let prunedRegions = pruneLR (ttTasks c) $ ttRegion c in
-   treeCase (ttName c) prunedRegions (ttIndexSpace c) (ttTasks c)
+  let (prunedRegions, prunedIS) = pruneLR (ttTasks c) (ttRegion c) (ttIndexSpace c) in
+   treeCase (ttName c) prunedRegions prunedIS (ttTasks c)
 
-pruneLR tasks r =
-  case pruneLRRec tasks r of
-   Just prunedRegion -> prunedRegion
+pruneLR tasks r ind =
+  case pruneLRRec tasks r ind of
+   Just (prunedRegion, ind) -> (prunedRegion, ind)
    Nothing -> error $ "pruneLR: region " ++ show r ++ " is not needed"
 
-pruneLRRec tasks r =
+pruneLRRec tasks r ind =
   case neededLR tasks r || neededPartitions /= [] of
-   True -> Just $ lrSetPartitions r neededPartitions
+   True -> Just $ (lrSetPartitions r $ L.map fst neededPartitions, ind)
    False -> Nothing
   where
-    neededPartitions = catMaybes $ L.map (pruneRP tasks) $ lrParts r
+    parts = matchLRPartitions (lrParts r) ind
+    neededPartitions = catMaybes $ L.map (\(rp, ip) -> pruneRP tasks rp ip) parts
+
+matchLRPartitions :: [RegionPartition] ->
+                     IndexSpace ->
+                     [(RegionPartition, IndexPartition)]
+matchLRPartitions lr is = error "matchLRPartitions"
 
 pruneLS :: [HighLevelTask] -> LogicalSubregion -> Maybe LogicalSubregion
 pruneLS tasks r =
@@ -29,21 +35,25 @@ pruneLS tasks r =
    True -> Just $ lsSetPartitions r neededPartitions
    False -> Nothing
   where
-    neededPartitions = catMaybes $ L.map (pruneRP tasks) $ lsParts r
+    neededPartitions = error "neededPartitions" --catMaybes $ L.map (pruneRP tasks) $ lsParts r
 
-pruneRP :: [HighLevelTask] -> RegionPartition -> Maybe RegionPartition
-pruneRP tasks rp =
-  let neededChildren = rpNeededChildren tasks rp
-      s = L.minimum $ M.keys neededChildren
-      e = L.maximum $ M.keys neededChildren in
-   case neededChildren == M.empty of
+pruneRP :: [HighLevelTask] -> RegionPartition -> IndexPartition -> Maybe (RegionPartition, IndexPartition)
+pruneRP tasks rp ip =
+  let (neededRegionChildren, neededIndexChildren) = rpNeededChildren tasks rp ip
+      s = 0
+      e = L.length neededRegionChildren
+      regionChildMap = M.fromList $ L.zip [0..((L.length neededRegionChildren) - 1)] neededRegionChildren
+      indexChildMap = M.fromList $ L.zip [0..((L.length neededIndexChildren) - 1)] neededIndexChildren in
+   case neededRegionChildren == [] of
     True -> Nothing
-    False -> Just $ regionPartition (rpName rp) (rpIndexPartition rp) s e neededChildren
+    False -> Just $ (regionPartition (rpName rp) (rpIndexPartition rp) s e regionChildMap, indexPartition (ipName ip) (ipIsDisjoint ip) s e indexChildMap)
 
-rpNeededChildren tasks rp =
-  let c = rpColorMap rp
+rpNeededChildren :: [HighLevelTask] -> RegionPartition -> IndexPartition -> ([LogicalSubregion], [IndexSubspace])
+rpNeededChildren tasks rp ip = error "rpNeededChildren"
+
+{-  let c = rpColorMap rp
       neededLS = catMaybes $ L.map (pruneLS tasks) $ M.elems c in
-   M.fromList $ L.zip [0..((L.length neededLS) - 1)] neededLS
+   M.fromList $ L.zip [0..((L.length neededLS) - 1)] neededLS-}
   
 neededLR tasks r =
   L.elem (lrName r) $ L.concatMap (\t -> L.map (\rr -> rrRegion rr) $ htRRS t) tasks
