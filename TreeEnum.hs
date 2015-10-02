@@ -4,6 +4,7 @@ import Data.List as L
 import Data.Map as M
 
 import Common
+import PruneTreeCase
 import TreeCase
 
 basicTreeCases =

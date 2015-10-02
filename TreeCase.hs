@@ -1,22 +1,27 @@
 module TreeCase(treeCase,
+                ttName, ttTasks, ttRegion, ttIndexSpace,
+                HighLevelTask,
                 highLevelTask,
+                htName, htRRS,
                 LogicalRegion,
                 logicalRegion,
+                lrName, lrParts, lrSetPartitions,
                 LogicalSubregion,
                 logicalSubregion,
+                lsName, lsParts, lsSetPartitions,
                 regionPartition,
                 indexSpace,
+                RegionPartition,
+                rpName, rpColorMap, rpIndexPartition,
                 IndexPartition,
                 indexPartition,
                 IndexSubspace,
                 indexSubspace,
                 fieldSpace,
-                pruneTreeCase,
                 compileTreeCase) where
 
 import Data.List as L
 import Data.Map as M
-import Data.Maybe
 
 import Common
 import Imperative
@@ -115,47 +120,6 @@ data FieldSpace
 
 fieldSpace = FieldSpace
 
-pruneTreeCase c =
-  treeCase (ttName c) (pruneLR (ttTasks c) $ ttRegion c) (ttIndexSpace c) (ttTasks c)
-
-pruneLR tasks r =
-  case pruneLRRec tasks r of
-   Just prunedRegion -> prunedRegion
-   Nothing -> error $ "pruneLR: region " ++ show r ++ " is not needed"
-
-pruneLRRec tasks r =
-  case neededLR tasks r || neededPartitions /= [] of
-   True -> Just $ lrSetPartitions r neededPartitions
-   False -> Nothing
-  where
-    neededPartitions = catMaybes $ L.map (pruneRP tasks) $ lrParts r
-
-pruneLS :: [HighLevelTask] -> LogicalSubregion -> Maybe LogicalSubregion
-pruneLS tasks r =
-  case neededLS tasks r || neededPartitions /= [] of
-   True -> Just $ lsSetPartitions r neededPartitions
-   False -> Nothing
-  where
-    neededPartitions = catMaybes $ L.map (pruneRP tasks) $ lsParts r
-
-pruneRP :: [HighLevelTask] -> RegionPartition -> Maybe RegionPartition
-pruneRP tasks rp =
-  let neededChildren = rpNeededChildren tasks rp
-      s = L.minimum $ M.keys neededChildren
-      e = L.maximum $ M.keys neededChildren in
-   case neededChildren == M.empty of
-    True -> Nothing
-    False -> Just $ regionPartition (rpName rp) (rpIndexPartition rp) s e neededChildren
-
-rpNeededChildren tasks rp =
-  let c = rpColorMap rp in
-   M.filter (neededLS tasks) c
-  
-neededLR tasks r =
-  L.elem (lrName r) $ L.concatMap (\t -> L.map (\rr -> rrRegion rr) $ htRRS t) tasks
-
-neededLS tasks r =
-  L.elem (lsName r) $ L.concatMap (\t -> L.map (\rr -> rrRegion rr) $ htRRS t) tasks
 
 compileTreeCase t =
   testCase (ttName t) (fsFields $ lrFieldSpace $ ttRegion t) (compileTasks t)
