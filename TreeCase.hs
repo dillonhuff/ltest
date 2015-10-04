@@ -179,8 +179,11 @@ indexPartitionInitCode indSpaceName p =
   (L.concatMap (indexSubspaceInitCode (ipName p)) $ M.elems $ ipChildren p)
 
 indexSubspaceInitCode partName indSub =
-  (indexSubspaceInit (indSubName indSub) partName (indSubColor indSub)):
-  (L.concatMap (indexPartitionInitCode (indSubName indSub)) (indSubParts indSub))
+  case indSubParts indSub of
+   [] -> []
+   _ ->
+     (indexSubspaceInit (indSubName indSub) partName (indSubColor indSub)):
+     (L.concatMap (indexPartitionInitCode (indSubName indSub)) (indSubParts indSub))
 
 taskLaunches tsks =
   L.map (\tsk -> taskLaunch (htName tsk) (htRRS tsk)) tsks
