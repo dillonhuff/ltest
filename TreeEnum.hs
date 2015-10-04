@@ -9,34 +9,63 @@ import Imperative
 import PruneTreeCase
 import TreeCase
 
+data TreeGenSettings
+  = TreeGenSettings {
+    maxDepth :: Int,
+    maxBreadth :: Int,
+    maxFields :: Int
+    } deriving (Eq, Ord, Show)
+
+treeDefaults = TreeGenSettings 3 3 5
+
+data TaskGenSettings
+  = TaskGenSettings {
+    maxTasks :: Int,
+    maxRegionRequirements :: Int
+    } deriving (Eq, Ord, Show)
+
+taskDefaults = TaskGenSettings 5 1
+
 basicTreeCases :: IO [TestCase]
 basicTreeCases = do
-  bsc <- basicCases dlr 10 3 1
+  bsc <- basicCases 10 treeDefaults taskDefaults
   return $ L.map (\c -> compileTreeCase $ pruneTreeCase c) bsc
 
-basicCases :: LogicalRegion -> Int -> Int -> Int -> IO [TreeCase]
-basicCases r maxCases maxTasks maxRegionRequirements = do
-  numCases <- getRandomR (1, maxCases)
-  sequence $ L.map (\i -> randCase r i maxTasks maxRegionRequirements) [1..numCases]
+basicCases :: Int -> TreeGenSettings -> TaskGenSettings -> IO [TreeCase]
+basicCases numCases treeSet taskSet =
+  sequence $ L.map (\i -> randCase i treeSet taskSet) [1..numCases]
 
-randCase :: LogicalRegion -> Int -> Int -> Int -> IO TreeCase
-randCase r caseNum maxTasks maxRRS = do
-  rts <- randTasks r maxTasks maxRRS
-  return $ treeCase ("case" ++ show caseNum) dlr dis rts
+randCase :: Int -> TreeGenSettings -> TaskGenSettings -> IO TreeCase
+randCase caseNum treeSet taskSet = do
+  (r, i) <- randTreeData treeSet
+  rts <- randTasks r taskSet
+  return $ treeCase ("case" ++ show caseNum) r i rts
 
-randTasks :: LogicalRegion -> Int -> Int -> IO [HighLevelTask]
-randTasks r maxTasks maxRegionRequirements = do
-  numTasks <- getRandomR (0, maxTasks)
-  tasks <- sequence $ L.map (\i -> randTask r i maxRegionRequirements) [1..numTasks]
+randTreeData :: TreeGenSettings -> IO (LogicalRegion, IndexSpace)
+randTreeData treeSet = do
+  indTree <- randIndexTree treeSet
+  regTree <- randLogicalRegionTree "lr" treeSet indTree
+  return (regTree, indTree)
+
+randLogicalRegionTree name treeSet indSpace = do
+  numFields <- getRandomR (1, maxFields treeSet)
+  return $ logicalRegion name (indName indSpace) (fieldSpace (name ++ "_fields") (L.map (\i -> "FIELD_" ++ show i) [1..numFields])) []
+
+randIndexTree treeSet = return dis
+
+randTasks :: LogicalRegion -> TaskGenSettings -> IO [HighLevelTask]
+randTasks r taskSet = do
+  numTasks <- getRandomR (0, maxTasks taskSet)
+  tasks <- sequence $ L.map (\i -> randTask r i (maxRegionRequirements taskSet)) [1..numTasks]
   case L.and $ L.map (\t -> htRRS t == []) tasks of
-   True -> randTasks r maxTasks maxRegionRequirements
+   True -> randTasks r taskSet
    False -> return tasks
 
 randTask :: LogicalRegion -> Int -> Int -> IO HighLevelTask
 randTask r taskNum maxRRS = do
   numRRS <- getRandomR (0, maxRRS)
   rrs <- sequence $ L.replicate numRRS (randRRS r)
-  return $ highLevelTask ("task_" ++ show taskNum) $ L.nub rrs
+  return $ highLevelTask ("task_" ++ show taskNum) $ L.nubBy (\r1 r2 -> rrRegion r1 == rrRegion r2) rrs
 
 randRRS :: LogicalRegion -> IO RegionRequirement
 randRRS r = do
