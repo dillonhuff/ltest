@@ -58,7 +58,7 @@ data LogicalRegion
 
 logicalRegion = LogicalRegion
 
-lrSetPartitions (LogicalRegion n i f _) p =
+lrSetPartitions p (LogicalRegion n i f _) =
   logicalRegion n i f p
 
 data LogicalSubregion
@@ -70,7 +70,7 @@ data LogicalSubregion
 
 logicalSubregion = LogicalSubregion
 
-lsSetPartitions (LogicalSubregion n c _) p =
+lsSetPartitions p (LogicalSubregion n c _) =
   logicalSubregion n c p
 lsSetColor c (LogicalSubregion n _ p) = logicalSubregion n c p
 
@@ -95,7 +95,7 @@ data IndexSpace
 
 indexSpace = IndexSpace
 
-indSetPartitions (IndexSpace n s e _) p =
+indSetPartitions p (IndexSpace n s e _) =
   IndexSpace n s e p
 
 data IndexPartition
@@ -120,7 +120,7 @@ data IndexSubspace
 
 indexSubspace = IndexSubspace
 
-indSubSetPartitions (IndexSubspace n c s e _) p =
+indSubSetPartitions p (IndexSubspace n c s e _) =
   IndexSubspace n c s e p
 indSubSetColor c (IndexSubspace n _ s e p) =
   IndexSubspace n c s e p

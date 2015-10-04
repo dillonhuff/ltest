@@ -28,8 +28,8 @@ pruneRec tasks r ind =
   where
     parts = matchLRPartitions (lrParts r) $ indParts ind
     neededPartitions = catMaybes $ L.map (\(rp, ip) -> pruneRP tasks rp ip) parts
-    newR = lrSetPartitions r $ L.map fst neededPartitions
-    newInd = indSetPartitions ind $ L.map snd neededPartitions
+    newR = lrSetPartitions (L.map fst neededPartitions) r
+    newInd = indSetPartitions (L.map snd neededPartitions) ind
 
 matchLRPartitions :: [RegionPartition] ->
                      [IndexPartition] ->
@@ -50,8 +50,8 @@ pruneLS tasks r ind =
   where
     parts = matchLRPartitions (lsParts r) $ indSubParts ind
     neededPartitions = catMaybes $ L.map (\(rp, ip) -> pruneRP tasks rp ip) parts
-    newR = lsSetPartitions r $ L.map fst neededPartitions
-    newInd = indSubSetPartitions ind $ L.map snd neededPartitions
+    newR = lsSetPartitions (L.map fst neededPartitions) r
+    newInd = indSubSetPartitions (L.map snd neededPartitions) ind
 
   {-  case neededLS tasks r || neededPartitions /= [] of
    True -> Just $ lsSetPartitions r neededPartitions
