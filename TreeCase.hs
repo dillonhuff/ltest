@@ -8,18 +8,20 @@ module TreeCase(treeCase,
                 lrName, lrParts, lrSetPartitions,
                 LogicalSubregion,
                 logicalSubregion,
-                lsName, lsParts, lsSetPartitions,
+                lsName, lsParts, lsSetPartitions, lsSetColor,
                 regionPartition,
                 indexSpace,
                 RegionPartition,
                 rpName, rpColorMap, rpIndexPartition,
+                IndexSpace,
+                indSetPartitions, indParts,
                 IndexPartition,
                 indexPartition,
-                ipName, ipIsDisjoint,
+                ipName, ipIsDisjoint, ipChildren,
                 IndexSubspace,
                 indexSubspace,
+                indSubParts, indSubSetPartitions, indSubSetColor,
                 fieldSpace,
-                IndexSpace,
                 compileTreeCase) where
 
 import Data.List as L
@@ -70,6 +72,7 @@ logicalSubregion = LogicalSubregion
 
 lsSetPartitions (LogicalSubregion n c _) p =
   logicalSubregion n c p
+lsSetColor c (LogicalSubregion n _ p) = logicalSubregion n c p
 
 data RegionPartition
   = RegionPartition {
@@ -92,6 +95,9 @@ data IndexSpace
 
 indexSpace = IndexSpace
 
+indSetPartitions (IndexSpace n s e _) p =
+  IndexSpace n s e p
+
 data IndexPartition
   = IndexPartition {
     ipName :: String,
@@ -113,6 +119,11 @@ data IndexSubspace
     } deriving (Eq, Ord, Show)
 
 indexSubspace = IndexSubspace
+
+indSubSetPartitions (IndexSubspace n c s e _) p =
+  IndexSubspace n c s e p
+indSubSetColor c (IndexSubspace n _ s e p) =
+  IndexSubspace n c s e p
 
 data FieldSpace
   = FieldSpace {
