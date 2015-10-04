@@ -47,16 +47,46 @@ randRRS r = do
   return $ regionRequirement reg fs priv coh parent
 
 randRegion :: LogicalRegion -> IO (String, String)
-randRegion r = return (lrName r, lrName r)
+randRegion r = do
+  shouldStop <- boolChance stopConst
+  case shouldStop || lrParts r == [] of
+   True -> return (lrName r, lrName r)
+   False -> do
+     nextPart <- randElem $ lrParts r
+     nextChild <- randElem $ M.elems $ rpColorMap nextPart
+     randSubregionRec nextChild (lrName r)
+
+randSubregionRec ls parentName = do
+  shouldStop <- boolChance stopConst
+  case shouldStop || lsParts ls == [] of
+   True -> return (lsName ls, parentName)
+   False -> do
+     nextPart <- randElem $ lsParts ls
+     nextChild <- randElem $ M.elems $ rpColorMap nextPart
+     randSubregionRec nextChild (lsName ls)
+
+boolChance :: Int -> IO Bool
+boolChance c = do
+  v <- getRandomR (1, c)
+  return $ v == 1
+
+stopConst = 10
 
 randFields :: LogicalRegion -> IO [String]
-randFields r = return $ fsFields $ lrFieldSpace r
+randFields r =
+  let fieldNames = fsFields $ lrFieldSpace r in
+  randElems fieldNames
 
 randPrivilege :: IO Privilege
 randPrivilege = randElem [RO, RW]
 
 randCoherence :: IO Coherence
 randCoherence = randElem [SIMULTANEOUS, ATOMIC, EXCLUSIVE]
+
+randElems :: [a] -> IO [a]
+randElems l = do
+  numElems <- getRandomR (1, length l)
+  sequence $ L.replicate numElems (randElem l)
 
 randElem :: [a] -> IO a
 randElem l = do
