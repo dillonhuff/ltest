@@ -53,13 +53,6 @@ pruneLS tasks r ind =
     newR = lsSetPartitions (L.map fst neededPartitions) r
     newInd = indSubSetPartitions (L.map snd neededPartitions) ind
 
-  {-  case neededLS tasks r || neededPartitions /= [] of
-   True -> Just $ lsSetPartitions r neededPartitions
-   False -> Nothing
-  where
-    parts = matchLRPartitions (lsParts r) ind
-    neededPartitions = catMaybes $ L.map (\(rp, ip) -> pruneRP tasks) parts-}
-
 pruneRP :: [HighLevelTask] -> RegionPartition -> IndexPartition -> Maybe (RegionPartition, IndexPartition)
 pruneRP tasks rp ip =
   let (regionChildMap, indexChildMap) = rpNeededChildren tasks rp ip
@@ -70,8 +63,6 @@ pruneRP tasks rp ip =
    case regionChildMap == M.empty of
     True -> Nothing
     False -> Just (newRPart, newIndPart)
-
-    -- (regionPartition (rpName rp) (rpIndexPartition rp) s e regionChildMap, indexPartition (ipName ip) (ipIsDisjoint ip) s e indexChildMap)-}
 
 rpNeededChildren :: [HighLevelTask] ->
                     RegionPartition ->
@@ -98,13 +89,6 @@ matchChildrenByColor rColorMap iColorMap =
     colors = M.keys rColorMap
     fLookup c m = fromJust $ M.lookup c m
 
-{-      regionChildMap = M.fromList $ L.zip [0..((L.length neededRegionChildren) - 1)] neededRegionChildren
-      indexChildMap = M.fromList $ L.zip [0..((L.length neededIndexChildren) - 1)] neededIndexChildren in
--}
-{-  let c = rpColorMap rp
-      neededLS = catMaybes $ L.map (pruneLS tasks) $ M.elems c in
-   M.fromList $ L.zip [0..((L.length neededLS) - 1)] neededLS-}
-  
 neededLR tasks r =
   L.elem (lrName r) $ L.concatMap (\t -> L.map (\rr -> rrRegion rr) $ htRRS t) tasks
 

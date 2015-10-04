@@ -12,11 +12,12 @@ import TreeEnum
 
 main :: IO ()
 main = do
-  sequence_ $ L.map execTestCase basicTreeCases
-  sequence_ $ L.map (\t -> showTestResult $ testName t) basicTreeCases
+  cs <- basicTreeCases
+  sequence_ $ L.map execTestCase cs
+  sequence_ $ L.map (\t -> showTestResult $ testName t) cs
 
 legionSpyPath = "/Users/dillon/CppWorkspace/Legion/legion/tools/legion_spy.py"
-testPath = "/Users/dillon/Haskell/legion/ltest/cases/"
+testPath = "/Users/dillon/Haskell/legion/ltest/cases2/"
 
 execTestCase :: TestCase -> IO ()
 execTestCase testCase = do
