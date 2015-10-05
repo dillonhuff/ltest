@@ -163,7 +163,7 @@ dataInit t =
     fs = lrFieldSpace r
 
 logicalRegionTreeInit r =
-  (logicalRegionInit(lrName r) (lrIndexSpace r) (fsName $ lrFieldSpace r)):
+  (logicalRegionInit (lrName r) (lrIndexSpace r) (fsName $ lrFieldSpace r)):
   (L.concatMap (regionPartitionInitCode $ lrName r) $ lrParts r)
 
 regionPartitionInitCode parentName part =
@@ -171,7 +171,8 @@ regionPartitionInitCode parentName part =
   (L.concatMap (regionSubspaceInitCode (rpName part)) $ M.elems $ rpColorMap part)
 
 regionSubspaceInitCode partName subregion =
-  (regionSubspaceInit (lsName subregion) partName (lsColor subregion)):[]
+  (regionSubspaceInit (lsName subregion) partName (lsColor subregion)):
+  (L.concatMap (regionPartitionInitCode $ lsName subregion) $ lsParts subregion)
 
 indexTreeInit is =
   [indexSpaceInit (indName is) (indStart is) (indEnd is)] ++

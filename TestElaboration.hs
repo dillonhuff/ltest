@@ -17,7 +17,7 @@ testBoilerplate =
   [include "legion.h",
    namespace "LegionRuntime::HighLevel"]
 
-taskIDs ts = enum "TaskIDs" $ "TOP_LEVEL_TASK_ID" : L.map (\t -> L.map toUpper $ taskName t) ts
+taskIDs ts = enum "TaskIDs" $ L.map (\t -> L.map toUpper $ taskName t) ts
 
 fieldIDs fs = enum "FieldIDs" fs
 
@@ -25,8 +25,7 @@ mainFunction ts =
   function int "main" [(int, "argc"), (ptr $ ptr $ char, "argv")] (mainBody ts)
 
 mainBody ts =
-  [exprStmt $ functionCall "HighLevelRuntime::set_top_level_task_id" [] [cppVar "TOP_LEVEL_TASK_ID"],
-   exprStmt $ functionCall "HighLevelRuntime::register_legion_task" [functionType "top_level_task"] [cppVar "TOP_LEVEL_TASK_ID", cppVar "Processor::LOC_PROC", cppVar "true", cppVar "false"]] ++
+  [exprStmt $ functionCall "HighLevelRuntime::set_top_level_task_id" [] [cppVar "TOP_LEVEL_TASK"]] ++
   taskRegistrationCode ts ++
   [returnStmt $ functionCall "HighLevelRuntime::start" [] [cppVar "argc", cppVar "argv"]]
 

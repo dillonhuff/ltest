@@ -16,11 +16,10 @@ data TreeGenSettings
     maxDepth :: Int,
     maxBreadth :: Int,
     maxFields :: Int,
-    indexRange :: Int,
-    randSeed :: Int
+    indexRange :: Int
     } deriving (Eq, Ord, Show)
 
-treeDefaults = TreeGenSettings 9 3 5 213 124
+treeDefaults = TreeGenSettings 3 4 10 29
 
 data TaskGenSettings
   = TaskGenSettings {
@@ -28,7 +27,9 @@ data TaskGenSettings
     maxRegionRequirements :: Int
     } deriving (Eq, Ord, Show)
 
-taskDefaults = TaskGenSettings 5 1
+taskDefaults = TaskGenSettings 10 1
+
+seed = 1213
 
 basicTreeCases :: IO [TestCase]
 basicTreeCases = do
@@ -37,17 +38,17 @@ basicTreeCases = do
 
 basicCases :: Int -> TreeGenSettings -> TaskGenSettings -> IO [TreeCase]
 basicCases numCases treeSet taskSet =
-  sequence $ L.map (\i -> randCase i treeSet taskSet) [1..numCases]
+  sequence $ L.map (\i -> randCase i (seed + i) treeSet taskSet) [1..numCases]
 
-randCase :: Int -> TreeGenSettings -> TaskGenSettings -> IO TreeCase
-randCase caseNum treeSet taskSet = do
-  (r, i) <- randTreeData treeSet
+randCase :: Int -> Int -> TreeGenSettings -> TaskGenSettings -> IO TreeCase
+randCase caseNum seed treeSet taskSet = do
+  (r, i) <- randTreeData seed treeSet
   rts <- randTasks r taskSet
   return $ treeCase ("case" ++ show caseNum) r i rts
 
-randTreeData :: TreeGenSettings -> IO (LogicalRegion, IndexSpace)
-randTreeData treeSet =
-  let indTree = randIndexTree treeSet in
+randTreeData :: Int -> TreeGenSettings -> IO (LogicalRegion, IndexSpace)
+randTreeData seed treeSet =
+  let indTree = randIndexTree seed treeSet in
    do
      regTree <- randLogicalRegionTree "lr" treeSet indTree
      return (regTree, indTree)
@@ -67,9 +68,9 @@ logicalSubregionFromIndSubspace is =
 
 type RandNameState a = RandT StdGen (State NameSource) a
 
-randIndexTree :: TreeGenSettings -> IndexSpace
-randIndexTree treeSet =
-  evalRandState (randSeed treeSet) $ randIndTree treeSet
+randIndexTree :: Int -> TreeGenSettings -> IndexSpace
+randIndexTree seed treeSet =
+  evalRandState seed $ randIndTree treeSet
 
 evalRandState :: Int -> RandNameState a -> a
 evalRandState seed comp =
@@ -80,7 +81,7 @@ randIndTree treeSet = do
   numParts <- getRandomR (0, maxBreadth treeSet)
   indName <- freshName
   parts <- sequence $ L.replicate numParts (randIndPart 1 treeSet)
-  return $ indexSpace indName 0 (indexRange treeSet) []
+  return $ indexSpace indName 0 (indexRange treeSet) parts
 
 randIndPart :: Int -> TreeGenSettings -> RandNameState IndexPartition
 randIndPart depth ts = do
@@ -101,7 +102,7 @@ disjoint a b = (indSubStart a) > (indSubEnd b) ||
 randIndSub :: Int -> TreeGenSettings -> Int -> RandNameState IndexSubspace
 randIndSub depth ts i = do
   n <- freshName
-  case depth == maxDepth ts of
+  case depth >= maxDepth ts of
    True -> return $ indexSubspace n i 0 0 []
    False -> do
      numParts <- getRandomR (1, maxBreadth ts)
@@ -174,12 +175,14 @@ boolChance c = do
   v <- getRandomR (1, c)
   return $ v == 1
 
-stopConst = 100
+stopConst = 20
 
 randFields :: LogicalRegion -> IO [String]
 randFields r =
   let fieldNames = fsFields $ lrFieldSpace r in
-  randElems fieldNames
+   do
+     elems <- randElems fieldNames
+     return $ L.nub elems
 
 randPrivilege :: IO Privilege
 randPrivilege = randElem [RO, RW]
