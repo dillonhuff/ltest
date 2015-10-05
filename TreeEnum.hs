@@ -168,7 +168,7 @@ randSubregionRec ls parentName = do
    False -> do
      nextPart <- randElem $ lsParts ls
      nextChild <- randElem $ M.elems $ rpColorMap nextPart
-     randSubregionRec nextChild (lsName ls)
+     randSubregionRec nextChild parentName
 
 boolChance :: Int -> IO Bool
 boolChance c = do
