@@ -2,7 +2,9 @@ module TreeEnum(basicTreeCases) where
 
 import Data.List as L
 import Data.Map as M
+import Control.Monad
 import Control.Monad.Random
+import Control.Monad.State.Lazy
 
 import Common
 import Imperative
@@ -13,10 +15,12 @@ data TreeGenSettings
   = TreeGenSettings {
     maxDepth :: Int,
     maxBreadth :: Int,
-    maxFields :: Int
+    maxFields :: Int,
+    indexRange :: Int,
+    randSeed :: Int
     } deriving (Eq, Ord, Show)
 
-treeDefaults = TreeGenSettings 3 3 5
+treeDefaults = TreeGenSettings 9 3 5 213 124
 
 data TaskGenSettings
   = TaskGenSettings {
@@ -42,16 +46,87 @@ randCase caseNum treeSet taskSet = do
   return $ treeCase ("case" ++ show caseNum) r i rts
 
 randTreeData :: TreeGenSettings -> IO (LogicalRegion, IndexSpace)
-randTreeData treeSet = do
-  indTree <- randIndexTree treeSet
-  regTree <- randLogicalRegionTree "lr" treeSet indTree
-  return (regTree, indTree)
+randTreeData treeSet =
+  let indTree = randIndexTree treeSet in
+   do
+     regTree <- randLogicalRegionTree "lr" treeSet indTree
+     return (regTree, indTree)
 
 randLogicalRegionTree name treeSet indSpace = do
   numFields <- getRandomR (1, maxFields treeSet)
-  return $ logicalRegion name (indName indSpace) (fieldSpace (name ++ "_fields") (L.map (\i -> "FIELD_" ++ show i) [1..numFields])) []
+  return $ logicalRegion name (indName indSpace) (fieldSpace (name ++ "_fields") (L.map (\i -> "FIELD_" ++ show i) [1..numFields])) $ L.map logicalPartitionFromInd $ indParts indSpace
 
-randIndexTree treeSet = return dis
+logicalPartitionFromInd ip =
+  regionPartition ("rp" ++ ipName ip) (ipName ip) (ipColorStart ip) (ipColorEnd ip) (logicalPartMapFromIPMap $ ipChildren ip)
+
+logicalPartMapFromIPMap ipMap =
+  M.map logicalSubregionFromIndSubspace ipMap
+
+logicalSubregionFromIndSubspace is =
+  logicalSubregion ("ls" ++ indSubName is) (indSubColor is) $ L.map logicalPartitionFromInd $ indSubParts is
+
+type RandNameState a = RandT StdGen (State NameSource) a
+
+randIndexTree :: TreeGenSettings -> IndexSpace
+randIndexTree treeSet =
+  evalRandState (randSeed treeSet) $ randIndTree treeSet
+
+evalRandState :: Int -> RandNameState a -> a
+evalRandState seed comp =
+  evalState (evalRandT comp (mkStdGen seed)) (nameSource "i" 0)
+
+randIndTree :: TreeGenSettings -> RandNameState IndexSpace
+randIndTree treeSet = do
+  numParts <- getRandomR (0, maxBreadth treeSet)
+  indName <- freshName
+  parts <- sequence $ L.replicate numParts (randIndPart 1 treeSet)
+  return $ indexSpace indName 0 (indexRange treeSet) []
+
+randIndPart :: Int -> TreeGenSettings -> RandNameState IndexPartition
+randIndPart depth ts = do
+  n <- freshName
+  numChildren <- getRandomR (1, maxBreadth ts)
+  subs <- sequence $ L.map (randIndSub (depth+1) ts) [0..(numChildren - 1)]
+  return $ indexPartition n (allDisjoint $ L.nub subs) 0 numChildren (indMap $ L.nub subs)
+
+indMap subs =
+  M.fromList $ L.zip [0..(length subs - 1)] subs
+
+allDisjoint subs =
+  L.and [disjoint a b || a == b | a <- subs, b <- subs]
+
+disjoint a b = (indSubStart a) > (indSubEnd b) ||
+               (indSubStart b) > (indSubEnd a)
+
+randIndSub :: Int -> TreeGenSettings -> Int -> RandNameState IndexSubspace
+randIndSub depth ts i = do
+  n <- freshName
+  case depth == maxDepth ts of
+   True -> return $ indexSubspace n i 0 0 []
+   False -> do
+     numParts <- getRandomR (1, maxBreadth ts)
+     parts <- sequence $ L.replicate numParts $ randIndPart (depth+1) ts
+     return $ indexSubspace n i 0 0 parts
+
+freshName :: RandNameState String
+freshName = do
+  n <- lift freshNameState
+  return n
+
+freshNameState :: State NameSource String
+freshNameState = do
+  ns <- get
+  let (newNS, n) = nextName ns in
+   do
+     put newNS
+     return n
+
+data NameSource = NameSource String Int
+                  deriving (Eq, Ord, Show)
+
+nameSource p n = NameSource p n
+
+nextName (NameSource p n) = (NameSource p (n+1), p ++ show n)
 
 randTasks :: LogicalRegion -> TaskGenSettings -> IO [HighLevelTask]
 randTasks r taskSet = do
@@ -99,7 +174,7 @@ boolChance c = do
   v <- getRandomR (1, c)
   return $ v == 1
 
-stopConst = 10
+stopConst = 100
 
 randFields :: LogicalRegion -> IO [String]
 randFields r =
