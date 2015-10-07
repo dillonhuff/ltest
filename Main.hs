@@ -15,10 +15,10 @@ main = do
   cs <- basicTreeCases
   sequence_ $ L.map execTestCase cs
   results <- sequence $ L.map (\t -> getTestResult $ testName t) cs
-  putStrLn $ show results
+  putStrLn $ showTestSuiteResults results
 
 legionSpyPath = "/Users/dillon/CppWorkspace/Legion/legion/tools/legion_spy.py"
-testPath = "/Users/dillon/Haskell/legion/ltest/suite7/"
+testPath = "/Users/dillon/Haskell/legion/ltest/suite8/"
 
 execTestCase :: TestCase -> IO ()
 execTestCase testCase = do
@@ -38,15 +38,27 @@ execTestCase testCase = do
 legionMakeFile name =
   "ifndef LG_RT_DIR\n$(error LG_RT_DIR variable is not defined, aborting build)\nendif\nDEBUG=1\nOUTPUT_LEVEL=LEVEL_DEBUG\nSHARED_LOWLEVEL=1\nCC_FLAGS=-DLEGION_SPY\nOUTFILE\t:= " ++ name ++ "\nGEN_SRC\t:= " ++ name ++ ".cc" ++ "\ninclude $(LG_RT_DIR)/runtime.mk"
 
+showTestSuiteResults :: [(String, Int)] -> String
+showTestSuiteResults cases =
+  let numCases = L.length cases
+      unparseableCases = L.filter (\(_, n) -> n == -1) cases
+      depAnalysisFailedCases = L.filter (\(_, n) -> n > 0) cases in
+  "Number of cases:            " ++ show numCases ++ "\n" ++
+  "Unparseable:                " ++ show (L.length unparseableCases) ++ "\n" ++
+  "Dependence Analysis Errors: " ++ show (L.length depAnalysisFailedCases)
+
+numTests cases = "Total tests:\t" ++ (show $ L.length cases)
+
+numUnparseable cases =
+  "Unparseable:\t" ++ (show $ L.length $ L.filter (\(_, n) -> n == (-1)) cases)
+
+failedDepTests cases =
+  "Failed:\t" ++ (show $ L.filter (\(_, n) -> n > 0) cases)
+
 getTestResult :: String -> IO (String, Int)
 getTestResult testName = do
   res <- parseTestResult testName
   return (testName, res)
-
-showTestResult :: String -> IO ()
-showTestResult testName = do
-  res <- parseTestResult testName
-  putStrLn $ testName ++ " " ++ show res
 
 parseTestResult :: String -> IO Int
 parseTestResult testName = do
