@@ -30,7 +30,7 @@ data TaskGenSettings
 taskDefaults = TaskGenSettings 20 1
 
 seed = 15
-numCases = 4
+numCases = 1
 
 basicTreeCases :: IO [TestCase]
 basicTreeCases = do
