@@ -19,7 +19,7 @@ data TreeGenSettings
     indexRange :: Int
     } deriving (Eq, Ord, Show)
 
-treeDefaults = TreeGenSettings 3 4 10 29
+treeDefaults = TreeGenSettings 4 3 10 29
 
 data TaskGenSettings
   = TaskGenSettings {
@@ -27,13 +27,14 @@ data TaskGenSettings
     maxRegionRequirements :: Int
     } deriving (Eq, Ord, Show)
 
-taskDefaults = TaskGenSettings 10 1
+taskDefaults = TaskGenSettings 20 1
 
-seed = 1213
+seed = 15
+numCases = 4
 
 basicTreeCases :: IO [TestCase]
 basicTreeCases = do
-  bsc <- basicCases 10 treeDefaults taskDefaults
+  bsc <- basicCases numCases treeDefaults taskDefaults
   return $ L.map (\c -> compileTreeCase $ pruneTreeCase c) bsc
 
 basicCases :: Int -> TreeGenSettings -> TaskGenSettings -> IO [TreeCase]
@@ -80,14 +81,14 @@ randIndTree :: TreeGenSettings -> RandNameState IndexSpace
 randIndTree treeSet = do
   numParts <- getRandomR (0, maxBreadth treeSet)
   indName <- freshName
-  parts <- sequence $ L.replicate numParts (randIndPart 1 treeSet)
+  parts <- sequence $ L.replicate numParts (randIndPart 0 (indexRange treeSet) 1 treeSet)
   return $ indexSpace indName 0 (indexRange treeSet) parts
 
-randIndPart :: Int -> TreeGenSettings -> RandNameState IndexPartition
-randIndPart depth ts = do
+randIndPart :: Int -> Int -> Int -> TreeGenSettings -> RandNameState IndexPartition
+randIndPart parentStart parentEnd depth ts = do
   n <- freshName
   numChildren <- getRandomR (1, maxBreadth ts)
-  subs <- sequence $ L.map (randIndSub (depth+1) ts) [0..(numChildren - 1)]
+  subs <- sequence $ L.map (randIndSub parentStart parentEnd (depth+1) ts) [0..(numChildren - 1)]
   return $ indexPartition n (allDisjoint $ L.nub subs) 0 numChildren (indMap $ L.nub subs)
 
 indMap subs =
@@ -99,15 +100,22 @@ allDisjoint subs =
 disjoint a b = (indSubStart a) > (indSubEnd b) ||
                (indSubStart b) > (indSubEnd a)
 
-randIndSub :: Int -> TreeGenSettings -> Int -> RandNameState IndexSubspace
-randIndSub depth ts i = do
+randIndSub :: Int -> Int -> Int -> TreeGenSettings -> Int -> RandNameState IndexSubspace
+randIndSub parentStart parentEnd depth ts i = do
   n <- freshName
+  (start, end) <- randSubspaceBounds parentStart parentEnd
   case depth >= maxDepth ts of
-   True -> return $ indexSubspace n i 0 0 []
+   True -> return $ indexSubspace n i start end []
    False -> do
      numParts <- getRandomR (1, maxBreadth ts)
-     parts <- sequence $ L.replicate numParts $ randIndPart (depth+1) ts
-     return $ indexSubspace n i 0 0 parts
+     parts <- sequence $ L.replicate numParts $ randIndPart parentStart parentEnd (depth+1) ts
+     return $ indexSubspace n i start end parts
+
+randSubspaceBounds :: Int -> Int -> RandNameState (Int, Int)
+randSubspaceBounds start end = do
+  randStart <- getRandomR (start, end)
+  randEnd <- getRandomR (randStart, end)
+  return (randStart, randEnd)
 
 freshName :: RandNameState String
 freshName = do

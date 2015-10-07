@@ -17,7 +17,7 @@ main = do
   sequence_ $ L.map (\t -> showTestResult $ testName t) cs
 
 legionSpyPath = "/Users/dillon/CppWorkspace/Legion/legion/tools/legion_spy.py"
-testPath = "/Users/dillon/Haskell/legion/ltest/suite5/"
+testPath = "/Users/dillon/Haskell/legion/ltest/suite6/"
 
 execTestCase :: TestCase -> IO ()
 execTestCase testCase = do
