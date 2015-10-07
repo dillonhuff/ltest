@@ -29,30 +29,28 @@ data TaskGenSettings
 
 taskDefaults = TaskGenSettings 20 1
 
-seed = 15
+seed = 17
 numCases = 10
 
-basicTreeCases :: IO [TestCase]
-basicTreeCases = do
-  bsc <- basicCases numCases treeDefaults taskDefaults
-  return $ L.map (\c -> compileTreeCase $ pruneTreeCase c) bsc
+basicTreeCases :: [TestCase]
+basicTreeCases =
+  L.map (\c -> compileTreeCase $ pruneTreeCase c) $ evalRandState seed (basicCases numCases treeDefaults taskDefaults)
 
-basicCases :: Int -> TreeGenSettings -> TaskGenSettings -> IO [TreeCase]
+basicCases :: Int -> TreeGenSettings -> TaskGenSettings -> RandNameState [TreeCase]
 basicCases numCases treeSet taskSet =
-  sequence $ L.map (\i -> randCase i (seed + i) treeSet taskSet) [1..numCases]
+  sequence $ L.map (\i -> randCase i treeSet taskSet) [1..numCases]
 
-randCase :: Int -> Int -> TreeGenSettings -> TaskGenSettings -> IO TreeCase
-randCase caseNum seed treeSet taskSet = do
-  (r, i) <- randTreeData seed treeSet
+randCase :: Int -> TreeGenSettings -> TaskGenSettings -> RandNameState TreeCase
+randCase caseNum treeSet taskSet = do
+  (r, i) <- randTreeData treeSet
   rts <- randTasks r taskSet
   return $ treeCase ("case" ++ show caseNum) r i rts
 
-randTreeData :: Int -> TreeGenSettings -> IO (LogicalRegion, IndexSpace)
-randTreeData seed treeSet =
-  let indTree = randIndexTree seed treeSet in
-   do
-     regTree <- randLogicalRegionTree "lr" treeSet indTree
-     return (regTree, indTree)
+randTreeData :: TreeGenSettings -> RandNameState (LogicalRegion, IndexSpace)
+randTreeData treeSet = do
+  indTree <- randIndTree treeSet
+  regTree <- randLogicalRegionTree "lr" treeSet indTree
+  return (regTree, indTree)
 
 randLogicalRegionTree name treeSet indSpace = do
   numFields <- getRandomR (1, maxFields treeSet)
@@ -66,10 +64,6 @@ logicalPartMapFromIPMap ipMap =
 
 logicalSubregionFromIndSubspace is =
   logicalSubregion ("ls" ++ indSubName is) (indSubColor is) $ L.map logicalPartitionFromInd $ indSubParts is
-
-randIndexTree :: Int -> TreeGenSettings -> IndexSpace
-randIndexTree seed treeSet =
-  evalRandState seed $ randIndTree treeSet
 
 randIndTree :: TreeGenSettings -> RandNameState IndexSpace
 randIndTree treeSet = do
@@ -111,7 +105,7 @@ randSubspaceBounds start end = do
   randEnd <- getRandomR (randStart, end)
   return (randStart, randEnd)
 
-randTasks :: LogicalRegion -> TaskGenSettings -> IO [HighLevelTask]
+randTasks :: LogicalRegion -> TaskGenSettings -> RandNameState [HighLevelTask]
 randTasks r taskSet = do
   numTasks <- getRandomR (0, maxTasks taskSet)
   tasks <- sequence $ L.map (\i -> randTask r i (maxRegionRequirements taskSet)) [1..numTasks]
@@ -119,13 +113,13 @@ randTasks r taskSet = do
    True -> randTasks r taskSet
    False -> return tasks
 
-randTask :: LogicalRegion -> Int -> Int -> IO HighLevelTask
+randTask :: LogicalRegion -> Int -> Int -> RandNameState HighLevelTask
 randTask r taskNum maxRRS = do
   numRRS <- getRandomR (0, maxRRS)
   rrs <- sequence $ L.replicate numRRS (randRRS r)
   return $ highLevelTask ("task_" ++ show taskNum) $ L.nubBy (\r1 r2 -> rrRegion r1 == rrRegion r2) rrs
 
-randRRS :: LogicalRegion -> IO RegionRequirement
+randRRS :: LogicalRegion -> RandNameState RegionRequirement
 randRRS r = do
   priv <- randPrivilege
   coh <- randCoherence
@@ -133,7 +127,7 @@ randRRS r = do
   (reg, parent) <- randRegion r
   return $ regionRequirement reg fs priv coh parent
 
-randRegion :: LogicalRegion -> IO (String, String)
+randRegion :: LogicalRegion -> RandNameState (String, String)
 randRegion r = do
   shouldStop <- boolChance stopConst
   case shouldStop || lrParts r == [] of
@@ -152,32 +146,32 @@ randSubregionRec ls parentName = do
      nextChild <- randElem $ M.elems $ rpColorMap nextPart
      randSubregionRec nextChild parentName
 
-boolChance :: Int -> IO Bool
+boolChance :: Int -> RandNameState Bool
 boolChance c = do
   v <- getRandomR (1, c)
   return $ v == 1
 
 stopConst = 20
 
-randFields :: LogicalRegion -> IO [String]
+randFields :: LogicalRegion -> RandNameState [String]
 randFields r =
   let fieldNames = fsFields $ lrFieldSpace r in
    do
      elems <- randElems fieldNames
      return $ L.nub elems
 
-randPrivilege :: IO Privilege
+randPrivilege :: RandNameState Privilege
 randPrivilege = randElem [RO, RW]
 
-randCoherence :: IO Coherence
+randCoherence :: RandNameState Coherence
 randCoherence = randElem [SIMULTANEOUS, ATOMIC, EXCLUSIVE]
 
-randElems :: [a] -> IO [a]
+randElems :: [a] -> RandNameState [a]
 randElems l = do
   numElems <- getRandomR (1, length l)
   sequence $ L.replicate numElems (randElem l)
 
-randElem :: [a] -> IO a
+randElem :: [a] -> RandNameState a
 randElem l = do
   ind <- getRandomR (0, length l - 1)
   return $ l !! ind

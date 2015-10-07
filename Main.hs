@@ -12,9 +12,8 @@ import TreeEnum
 
 main :: IO ()
 main = do
-  cs <- basicTreeCases
-  sequence_ $ L.map execTestCase cs
-  results <- sequence $ L.map (\t -> getTestResult $ testName t) cs
+  sequence_ $ L.map execTestCase basicTreeCases
+  results <- sequence $ L.map (\t -> getTestResult $ testName t) basicTreeCases
   putStrLn $ showTestSuiteResults results
 
 legionSpyPath = "/Users/dillon/CppWorkspace/Legion/legion/tools/legion_spy.py"
