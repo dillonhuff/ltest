@@ -16,8 +16,8 @@ main = do
   results <- sequence $ L.map (\t -> getTestResult $ testName t) basicTreeCases
   putStrLn $ showTestSuiteResults results
 
-legionSpyPath = "/Users/dillon/CppWorkspace/Legion/legion/tools/legion_spy.py"
-testPath = "/Users/dillon/Haskell/legion/ltest/suite8/"
+legionSpyPath = "/Users/dillon/CppWorkspace/Legion/Master/legion/tools/legion_spy.py"
+testPath = "/Users/dillon/Haskell/legion/ltest/suite17/"
 
 execTestCase :: TestCase -> IO ()
 execTestCase testCase = do
@@ -44,7 +44,12 @@ showTestSuiteResults cases =
       depAnalysisFailedCases = L.filter (\(_, n) -> n > 0) cases in
   "Number of cases:            " ++ show numCases ++ "\n" ++
   "Unparseable:                " ++ show (L.length unparseableCases) ++ "\n" ++
-  "Dependence Analysis Errors: " ++ show (L.length depAnalysisFailedCases)
+  "Dependence Analysis Errors: " ++ show (L.length depAnalysisFailedCases) ++ "\n" ++
+  "\nCases\t\t# of dependence errors\n" ++
+  "-------------------------------------------------" ++ "\n" ++
+  (L.concat $ L.intersperse "\n" $ L.map showCase depAnalysisFailedCases)
+  where
+    showCase (name, e) = name ++ "\t\t" ++ show e
 
 numTests cases = "Total tests:\t" ++ (show $ L.length cases)
 

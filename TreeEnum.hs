@@ -16,20 +16,23 @@ data TreeGenSettings
     maxDepth :: Int,
     maxBreadth :: Int,
     maxFields :: Int,
-    indexRange :: Int
+    maxIndexRange :: Int
     } deriving (Eq, Ord, Show)
 
-treeDefaults = TreeGenSettings 4 3 10 29
+treeDefaults = TreeGenSettings 5 5 10 1000
 
 data TaskGenSettings
   = TaskGenSettings {
     maxTasks :: Int,
-    maxRegionRequirements :: Int
+    maxRegionRequirements :: Int,
+    privileges :: [Privilege],
+    coherences :: [Coherence]
     } deriving (Eq, Ord, Show)
 
-taskDefaults = TaskGenSettings 20 1
+taskDefaults =
+  TaskGenSettings 5 1 [RW] [EXCLUSIVE] --[RO, RW] [SIMULTANEOUS, ATOMIC, EXCLUSIVE]
 
-seed = 17
+seed = 25
 numCases = 10
 
 basicTreeCases :: [TestCase]
@@ -69,8 +72,9 @@ randIndTree :: TreeGenSettings -> RandNameState IndexSpace
 randIndTree treeSet = do
   numParts <- getRandomR (0, maxBreadth treeSet)
   indName <- freshName
-  parts <- sequence $ L.replicate numParts (randIndPart 0 (indexRange treeSet) 1 treeSet)
-  return $ indexSpace indName 0 (indexRange treeSet) parts
+  indEnd <- getRandomR (0, maxIndexRange treeSet)
+  parts <- sequence $ L.replicate numParts (randIndPart 0 indEnd 1 treeSet)
+  return $ indexSpace indName 0 indEnd parts
 
 randIndPart :: Int -> Int -> Int -> TreeGenSettings -> RandNameState IndexPartition
 randIndPart parentStart parentEnd depth ts = do
@@ -108,21 +112,21 @@ randSubspaceBounds start end = do
 randTasks :: LogicalRegion -> TaskGenSettings -> RandNameState [HighLevelTask]
 randTasks r taskSet = do
   numTasks <- getRandomR (0, maxTasks taskSet)
-  tasks <- sequence $ L.map (\i -> randTask r i (maxRegionRequirements taskSet)) [1..numTasks]
+  tasks <- sequence $ L.map (\i -> randTask taskSet r i (maxRegionRequirements taskSet)) [1..numTasks]
   case L.and $ L.map (\t -> htRRS t == []) tasks of
    True -> randTasks r taskSet
    False -> return tasks
 
-randTask :: LogicalRegion -> Int -> Int -> RandNameState HighLevelTask
-randTask r taskNum maxRRS = do
+randTask :: TaskGenSettings -> LogicalRegion -> Int -> Int -> RandNameState HighLevelTask
+randTask taskSet r taskNum maxRRS = do
   numRRS <- getRandomR (0, maxRRS)
-  rrs <- sequence $ L.replicate numRRS (randRRS r)
+  rrs <- sequence $ L.replicate numRRS (randRRS taskSet r)
   return $ highLevelTask ("task_" ++ show taskNum) $ L.nubBy (\r1 r2 -> rrRegion r1 == rrRegion r2) rrs
 
-randRRS :: LogicalRegion -> RandNameState RegionRequirement
-randRRS r = do
-  priv <- randPrivilege
-  coh <- randCoherence
+randRRS :: TaskGenSettings -> LogicalRegion -> RandNameState RegionRequirement
+randRRS taskSet r = do
+  priv <- randElem $ privileges taskSet
+  coh <- randElem $ coherences taskSet
   fs <- randFields r
   (reg, parent) <- randRegion r
   return $ regionRequirement reg fs priv coh parent
@@ -159,12 +163,6 @@ randFields r =
    do
      elems <- randElems fieldNames
      return $ L.nub elems
-
-randPrivilege :: RandNameState Privilege
-randPrivilege = randElem [RO, RW]
-
-randCoherence :: RandNameState Coherence
-randCoherence = randElem [SIMULTANEOUS, ATOMIC, EXCLUSIVE]
 
 randElems :: [a] -> RandNameState [a]
 randElems l = do
