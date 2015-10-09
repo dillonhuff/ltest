@@ -100,7 +100,7 @@ randIndSub parentStart parentEnd depth ts i = do
    True -> return $ indexSubspace n i start end []
    False -> do
      numParts <- getRandomR (1, maxBreadth ts)
-     parts <- sequence $ L.replicate numParts $ randIndPart parentStart parentEnd (depth+1) ts
+     parts <- sequence $ L.replicate numParts $ randIndPart start end (depth+1) ts
      return $ indexSubspace n i start end parts
 
 randSubspaceBounds :: Int -> Int -> RandNameState (Int, Int)
