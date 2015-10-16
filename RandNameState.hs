@@ -1,9 +1,11 @@
 module RandNameState(RandNameState,
                      freshName, freshNameState,
+                     randElem, randElems,
                      evalRandState) where
 
 import Control.Monad.State.Lazy
 import Control.Monad.Random
+import Data.List as L
 
 type RandNameState a = RandT StdGen (State NameSource) a
 
@@ -30,3 +32,13 @@ data NameSource = NameSource String Int
 nameSource p n = NameSource p n
 
 nextName (NameSource p n) = (NameSource p (n+1), p ++ show n)
+
+randElems :: [a] -> RandNameState [a]
+randElems l = do
+  numElems <- getRandomR (1, length l)
+  sequence $ L.replicate numElems (randElem l)
+
+randElem :: [a] -> RandNameState a
+randElem l = do
+  ind <- getRandomR (0, length l - 1)
+  return $ l !! ind

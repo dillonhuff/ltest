@@ -25,12 +25,13 @@ data TaskGenSettings
   = TaskGenSettings {
     maxTasks :: Int,
     maxRegionRequirements :: Int,
+    stopConst :: Int,    
     privileges :: [Privilege],
     coherences :: [Coherence]
     } deriving (Eq, Ord, Show)
 
 taskDefaults =
-  TaskGenSettings 5 1 [RO, RW] [SIMULTANEOUS, ATOMIC, EXCLUSIVE] --[RW] [EXCLUSIVE]
+  TaskGenSettings 5 1 20 [RO, RW] [SIMULTANEOUS, ATOMIC, EXCLUSIVE]
 
 seed = 27
 numCases = 5
@@ -128,34 +129,32 @@ randRRS taskSet r = do
   priv <- randElem $ privileges taskSet
   coh <- randElem $ coherences taskSet
   fs <- randFields r
-  (reg, parent) <- randRegion r
+  (reg, parent) <- randRegion taskSet r
   return $ regionRequirement reg fs priv coh parent
 
-randRegion :: LogicalRegion -> RandNameState (String, String)
-randRegion r = do
-  shouldStop <- boolChance stopConst
+randRegion :: TaskGenSettings -> LogicalRegion -> RandNameState (String, String)
+randRegion taskSet r = do
+  shouldStop <- boolChance $ stopConst taskSet
   case shouldStop || lrParts r == [] of
    True -> return (lrName r, lrName r)
    False -> do
      nextPart <- randElem $ lrParts r
      nextChild <- randElem $ M.elems $ rpColorMap nextPart
-     randSubregionRec nextChild (lrName r)
+     randSubregionRec taskSet nextChild (lrName r)
 
-randSubregionRec ls parentName = do
-  shouldStop <- boolChance stopConst
+randSubregionRec taskSet ls parentName = do
+  shouldStop <- boolChance $ stopConst taskSet
   case shouldStop || lsParts ls == [] of
    True -> return (lsName ls, parentName)
    False -> do
      nextPart <- randElem $ lsParts ls
      nextChild <- randElem $ M.elems $ rpColorMap nextPart
-     randSubregionRec nextChild parentName
+     randSubregionRec taskSet nextChild parentName
 
 boolChance :: Int -> RandNameState Bool
 boolChance c = do
   v <- getRandomR (1, c)
   return $ v == 1
-
-stopConst = 20
 
 randFields :: LogicalRegion -> RandNameState [String]
 randFields r =
@@ -163,13 +162,3 @@ randFields r =
    do
      elems <- randElems fieldNames
      return $ L.nub elems
-
-randElems :: [a] -> RandNameState [a]
-randElems l = do
-  numElems <- getRandomR (1, length l)
-  sequence $ L.replicate numElems (randElem l)
-
-randElem :: [a] -> RandNameState a
-randElem l = do
-  ind <- getRandomR (0, length l - 1)
-  return $ l !! ind
