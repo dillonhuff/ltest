@@ -19,7 +19,6 @@ module TreeCase(TreeCase,
                 indexPartition,
                 ipName, ipIsDisjoint, ipChildren,
                 ipColorStart, ipColorEnd,
-                IndexSubspace,
                 indexSubspace,
                 indSubName, indSubColor, indSubParts, indSubSetPartitions,
                 indSubSetColor,
@@ -70,23 +69,9 @@ lsName (LogicalSubregion n _ _) = n
 lsColor (LogicalSubregion _ c _) = c
 lsParts (LogicalSubregion _ _ p) = p
 
-    {-{
-    lrName :: String,
-    lrIndexSpace :: String,
-    lrFieldSpace :: FieldSpace,
-    lrParts :: [RegionPartition]
-    } deriving (Eq, Ord, Show)-}
-
-
 lrSetPartitions p (LogicalRegion n i f _) =
   logicalRegion n i f p
 
-{-data LogicalSubregion
-  = LogicalSubregion {
-    lsName :: String,
-    lsColor :: Int,
-    lsParts :: [RegionPartition]
-    } deriving (Eq, Ord, Show)-}
 
 lsSetPartitions p (LogicalSubregion n c _) =
   logicalSubregion n c p
@@ -104,37 +89,14 @@ data RegionPartition
 regionPartition = RegionPartition
 
 data IndexSpace
-  = IndexSpace {
-    indName :: String,
-    indStart :: Int,
-    indEnd :: Int,
-    indParts :: [IndexPartition]
-    } deriving (Eq, Ord, Show)
+  = IndexSpace String Int Int [IndexPartition]
+  | IndexSubspace String Int Int Int [IndexPartition]
+    deriving (Eq, Ord, Show)
 
 indexSpace = IndexSpace
 
 indSetPartitions p (IndexSpace n s e _) =
   IndexSpace n s e p
-
-data IndexPartition
-  = IndexPartition {
-    ipName :: String,
-    ipIsDisjoint :: Bool,
-    ipColorStart :: Int,
-    ipColorEnd :: Int,
-    ipChildren :: Map Int IndexSubspace
-    } deriving (Eq, Ord, Show)
-
-indexPartition = IndexPartition
-
-data IndexSubspace
-  = IndexSubspace {
-    indSubName :: String,
-    indSubColor :: Int,
-    indSubStart :: Int,
-    indSubEnd :: Int,
-    indSubParts :: [IndexPartition]
-    } deriving (Eq, Ord, Show)
 
 indexSubspace = IndexSubspace
 
@@ -142,6 +104,46 @@ indSubSetPartitions p (IndexSubspace n c s e _) =
   IndexSubspace n c s e p
 indSubSetColor c (IndexSubspace n _ s e p) =
   IndexSubspace n c s e p
+
+indName (IndexSpace n _ _ _) = n
+indStart (IndexSpace _ s _ _) = s
+indEnd (IndexSpace _ _ e _) = e
+indParts (IndexSpace _ _ _ p) = p
+
+indSubName (IndexSubspace n _ _ _ _) = n
+indSubColor (IndexSubspace _ c _ _ _) = c
+indSubStart (IndexSubspace _ _ s _ _) = s
+indSubEnd (IndexSubspace _ _ _ e _) = e
+indSubParts (IndexSubspace _ _ _ _ p) = p
+
+{-data IndexSubspace
+  = IndexSubspace {
+    indSubName :: String,
+    indSubColor :: Int,
+    indSubStart :: Int,
+    indSubEnd :: Int,
+    indSubParts :: [IndexPartition]
+    } deriving (Eq, Ord, Show)-}
+
+
+{-    {
+    indName :: String,
+    indStart :: Int,
+    indEnd :: Int,
+    indParts :: [IndexPartition]
+    } deriving (Eq, Ord, Show)-}
+
+
+data IndexPartition
+  = IndexPartition {
+    ipName :: String,
+    ipIsDisjoint :: Bool,
+    ipColorStart :: Int,
+    ipColorEnd :: Int,
+    ipChildren :: Map Int IndexSpace
+    } deriving (Eq, Ord, Show)
+
+indexPartition = IndexPartition
 
 data FieldSpace
   = FieldSpace {

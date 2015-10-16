@@ -41,8 +41,8 @@ matchLRPartitions rParts iParts =
 
 pruneLS :: [HighLevelTask] ->
            LogicalRegion ->
-           IndexSubspace ->
-           Maybe (LogicalRegion, IndexSubspace)
+           IndexSpace ->
+           Maybe (LogicalRegion, IndexSpace)
 pruneLS tasks r ind =
   case neededLS tasks r || neededPartitions /= [] of
    True -> Just $ (newR, newInd)
@@ -67,7 +67,7 @@ pruneRP tasks rp ip =
 rpNeededChildren :: [HighLevelTask] ->
                     RegionPartition ->
                     IndexPartition ->
-                    (Map Int LogicalRegion, Map Int IndexSubspace)
+                    (Map Int LogicalRegion, Map Int IndexSpace)
 rpNeededChildren tasks rp ip =
   let c = rpColorMap rp
       i = ipChildren ip
@@ -81,8 +81,8 @@ rpNeededChildren tasks rp ip =
    (subRegMap, subSpaceMap)
 
 matchChildrenByColor :: Map Int LogicalRegion ->
-                        Map Int IndexSubspace ->
-                        [(LogicalRegion, IndexSubspace)]
+                        Map Int IndexSpace ->
+                        [(LogicalRegion, IndexSpace)]
 matchChildrenByColor rColorMap iColorMap =
   L.map (\color -> (fLookup color rColorMap, fLookup color iColorMap)) colors
   where

@@ -92,7 +92,7 @@ allDisjoint subs =
 disjoint a b = (indSubStart a) > (indSubEnd b) ||
                (indSubStart b) > (indSubEnd a)
 
-randIndSub :: Int -> Int -> Int -> TreeGenSettings -> Int -> RandNameState IndexSubspace
+randIndSub :: Int -> Int -> Int -> TreeGenSettings -> Int -> RandNameState IndexSpace
 randIndSub parentStart parentEnd depth ts i = do
   n <- freshName
   (start, end) <- randSubspaceBounds parentStart parentEnd
