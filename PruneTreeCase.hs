@@ -40,9 +40,9 @@ matchLRPartitions rParts iParts =
     fLookup i l = fromJust $ find (\ip -> ipName ip == rpIndexPartition i) l
 
 pruneLS :: [HighLevelTask] ->
-           LogicalSubregion ->
+           LogicalRegion ->
            IndexSubspace ->
-           Maybe (LogicalSubregion, IndexSubspace)
+           Maybe (LogicalRegion, IndexSubspace)
 pruneLS tasks r ind =
   case neededLS tasks r || neededPartitions /= [] of
    True -> Just $ (newR, newInd)
@@ -67,7 +67,7 @@ pruneRP tasks rp ip =
 rpNeededChildren :: [HighLevelTask] ->
                     RegionPartition ->
                     IndexPartition ->
-                    (Map Int LogicalSubregion, Map Int IndexSubspace)
+                    (Map Int LogicalRegion, Map Int IndexSubspace)
 rpNeededChildren tasks rp ip =
   let c = rpColorMap rp
       i = ipChildren ip
@@ -80,9 +80,9 @@ rpNeededChildren tasks rp ip =
       subSpaceMap = M.fromList $ subSpaceList in
    (subRegMap, subSpaceMap)
 
-matchChildrenByColor :: Map Int LogicalSubregion ->
+matchChildrenByColor :: Map Int LogicalRegion ->
                         Map Int IndexSubspace ->
-                        [(LogicalSubregion, IndexSubspace)]
+                        [(LogicalRegion, IndexSubspace)]
 matchChildrenByColor rColorMap iColorMap =
   L.map (\color -> (fLookup color rColorMap, fLookup color iColorMap)) colors
   where

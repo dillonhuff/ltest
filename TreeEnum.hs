@@ -30,10 +30,10 @@ data TaskGenSettings
     } deriving (Eq, Ord, Show)
 
 taskDefaults =
-  TaskGenSettings 5 1 [RW] [EXCLUSIVE] --[RO, RW] [SIMULTANEOUS, ATOMIC, EXCLUSIVE]
+  TaskGenSettings 5 1 [RO, RW] [SIMULTANEOUS, ATOMIC, EXCLUSIVE] --[RW] [EXCLUSIVE]
 
-seed = 25
-numCases = 10
+seed = 27
+numCases = 5
 
 basicTreeCases :: [TestCase]
 basicTreeCases =

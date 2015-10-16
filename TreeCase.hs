@@ -7,7 +7,6 @@ module TreeCase(TreeCase,
                 LogicalRegion,
                 logicalRegion,
                 lrName, lrParts, lrSetPartitions, lrFieldSpace,
-                LogicalSubregion,
                 logicalSubregion,
                 lsName, lsParts, lsSetPartitions, lsSetColor,
                 regionPartition,
@@ -55,26 +54,39 @@ data HighLevelTask
 highLevelTask = HighLevelTask
 
 data LogicalRegion
-  = LogicalRegion {
+  = LogicalRegion String String FieldSpace [RegionPartition]
+  | LogicalSubregion String Int [RegionPartition]
+    deriving (Eq, Ord, Show)
+
+logicalRegion = LogicalRegion
+logicalSubregion = LogicalSubregion
+
+lrName (LogicalRegion n _ _ _) = n
+lrIndexSpace (LogicalRegion _ i _ _) = i
+lrFieldSpace (LogicalRegion _ _ f _) = f
+lrParts (LogicalRegion _ _ _ p) = p
+
+lsName (LogicalSubregion n _ _) = n
+lsColor (LogicalSubregion _ c _) = c
+lsParts (LogicalSubregion _ _ p) = p
+
+    {-{
     lrName :: String,
     lrIndexSpace :: String,
     lrFieldSpace :: FieldSpace,
     lrParts :: [RegionPartition]
-    } deriving (Eq, Ord, Show)
+    } deriving (Eq, Ord, Show)-}
 
-logicalRegion = LogicalRegion
 
 lrSetPartitions p (LogicalRegion n i f _) =
   logicalRegion n i f p
 
-data LogicalSubregion
+{-data LogicalSubregion
   = LogicalSubregion {
     lsName :: String,
     lsColor :: Int,
     lsParts :: [RegionPartition]
-    } deriving (Eq, Ord, Show)
-
-logicalSubregion = LogicalSubregion
+    } deriving (Eq, Ord, Show)-}
 
 lsSetPartitions p (LogicalSubregion n c _) =
   logicalSubregion n c p
@@ -86,7 +98,7 @@ data RegionPartition
     rpIndexPartition :: String,
     rpColorStart :: Int,
     rpColorEnd :: Int,
-    rpColorMap :: Map Int LogicalSubregion
+    rpColorMap :: Map Int LogicalRegion
     } deriving (Eq, Ord, Show)
 
 regionPartition = RegionPartition

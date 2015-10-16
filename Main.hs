@@ -17,7 +17,7 @@ main = do
   putStrLn $ showTestSuiteResults results
 
 legionSpyPath = "/Users/dillon/CppWorkspace/Legion/Master/legion/tools/legion_spy.py"
-testPath = "/Users/dillon/Haskell/legion/ltest/suite17/"
+testPath = "/Users/dillon/Haskell/legion/ltest/suite20/"
 
 execTestCase :: TestCase -> IO ()
 execTestCase testCase = do
